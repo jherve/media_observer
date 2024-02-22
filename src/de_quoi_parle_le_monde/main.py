@@ -2,6 +2,7 @@ import requests
 import requests_cache
 from requests_cache.models.response import CachedResponse
 from requests_cache.backends.sqlite import SQLiteCache
+from bs4 import BeautifulSoup
 
 http_session = requests_cache.CachedSession("ia",backend="sqlite")
 
@@ -29,10 +30,22 @@ class InternetArchive:
 
     @staticmethod
     def get_snapshot(url, snap_date):
-        return http_session.get(f"http://web.archive.org/web/{snap_date}/{url}")
+        return http_session.get(f"http://web.archive.org/web/{snap_date}/{url}", headers={"lang": "fr"})
 
-r = InternetArchive.search_snapshots("lemonde.fr", {"from": "20240222", "to": "20240222", "limit": 10})
 
-results = [InternetArchive.parse_results(r) for r in r.text.splitlines()]
+class WebPage:
+    def __init__(self, doc):
+        self.soup = BeautifulSoup(doc, 'html.parser')
 
-print(InternetArchive.get_snapshot(*results[0]))
+    def get_top_articles_titles(self):
+        return [s.text.strip() for s in w.soup.find_all("div", class_="top-article")]
+
+def get_latest_snap():
+    r = InternetArchive.search_snapshots("lemonde.fr", {"from": "20240222", "to": "20240222", "limit": 10})
+    results = [InternetArchive.parse_results(r) for r in r.text.splitlines()]
+
+    return InternetArchive.get_snapshot(*results[-1])
+
+
+print(WebPage(get_latest_snap().text).get_top_articles_titles())
+
