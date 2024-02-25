@@ -60,10 +60,12 @@ class CdxRequest:
 
     @classmethod
     def _stringify_value(cls, v) -> str:
-        if isinstance(v, date):
-            return v.strftime(cls.date_format)
-        elif isinstance(v, datetime):
+        # The test against datetime has to come first because `datetime` instances
+        # are also `date` instances
+        if isinstance(v, datetime):
             return v.strftime(cls.datetime_format)
+        elif isinstance(v, date):
+            return v.strftime(cls.date_format)
         else:
             return str(v)
 
