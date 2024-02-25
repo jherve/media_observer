@@ -1,6 +1,6 @@
 from attrs import frozen
 from typing import Optional, ClassVar, NewType
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import cattrs
 from bs4 import BeautifulSoup
 
@@ -104,3 +104,15 @@ class InternetArchiveClient:
     ) -> BeautifulSoup:
         resp = await self.client.aget(snap.url)
         return BeautifulSoup(resp, "lxml")
+
+    async def get_snapshot_closest_to(self, url, dt):
+        req = CdxRequest(
+            url=url,
+            from_=dt - timedelta(hours=6.0),
+            to_=dt + timedelta(hours=6.0),
+            filter="statuscode:200",
+        )
+
+        all_snaps = await self.search_snapshots(req)
+        closest = min(all_snaps, key=lambda s: abs(s.timestamp - dt))
+        return closest
