@@ -1,16 +1,30 @@
 from attrs import frozen
-from typing import Optional, ClassVar
+from typing import Optional, ClassVar, NewType
 from datetime import date, datetime
 import cattrs
 from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.http import HttpClient
 
+Timestamp = NewType("Timestamp", datetime)
+datetime_format = "%Y%m%d%H%M%S"
+
+
+def parse_timestamp(s: str) -> Timestamp:
+    return datetime.strptime(s, datetime_format)
+
+
+def timestamp_to_str(ts: Timestamp) -> str:
+    return ts.strftime(datetime_format)
+
+
+cattrs.register_structure_hook(Timestamp, lambda v, _: parse_timestamp(v))
+
 
 @frozen
 class CdxRecord:
     urlkey: str
-    timestamp: int
+    timestamp: Timestamp
     original: str
     mimetype: str
     statuscode: int
@@ -56,12 +70,12 @@ class CdxRequest:
 
 @frozen
 class InternetArchiveSnapshot:
-    timestamp: str
+    timestamp: Timestamp
     original: str
 
     @property
     def url(self):
-        return f"http://web.archive.org/web/{self.timestamp}/{self.original}"
+        return f"http://web.archive.org/web/{timestamp_to_str(self.timestamp)}/{self.original}"
 
     @staticmethod
     def from_record(rec: CdxRecord):
