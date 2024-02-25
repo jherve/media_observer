@@ -4,7 +4,7 @@ from datetime import date, datetime
 import cattrs
 from bs4 import BeautifulSoup
 
-from http_client import HttpClient
+from de_quoi_parle_le_monde.http import HttpClient
 
 
 @frozen

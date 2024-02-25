@@ -1,8 +1,9 @@
 from datetime import date, timedelta
 import asyncio
 
-from internet_archive import InternetArchiveClient, CdxRequest
-from le_monde import LeMondeMainPage
+from de_quoi_parle_le_monde.http import HttpClient
+from de_quoi_parle_le_monde.internet_archive import InternetArchiveClient, CdxRequest
+from de_quoi_parle_le_monde.le_monde import LeMondeMainPage
 
 
 async def get_latest_snaps():

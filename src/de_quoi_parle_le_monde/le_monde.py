@@ -2,7 +2,7 @@ from attrs import frozen
 import cattrs
 from bs4 import BeautifulSoup
 
-from internet_archive import InternetArchiveSnapshot
+from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 
 
 @frozen
