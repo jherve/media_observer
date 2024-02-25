@@ -69,6 +69,29 @@ class HttpClient:
                 return await resp.text()
 
 
+@frozen
+class InternetArchiveSnapshot:
+    timestamp: str
+    original: str
+
+    @property
+    def url(self):
+        return f"http://web.archive.org/web/{self.timestamp}/{self.original}"
+
+    @staticmethod
+    def from_record(rec: CdxRecord):
+        return InternetArchiveSnapshot(timestamp=rec.timestamp, original=rec.original)
+
+
+@frozen
+class LeMondeMainPage:
+    snapshot: InternetArchiveSnapshot
+    soup: BeautifulSoup
+
+    def get_top_articles_titles(self):
+        return [s.text.strip() for s in self.soup.find_all("div", class_="top-article")]
+
+
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
 
@@ -76,13 +99,19 @@ class InternetArchiveClient:
         self.client = HttpClient()
 
     async def search_snapshots(self, req: CdxRequest):
+        def to_snapshot(line):
+            record = CdxRecord.parse_line(line)
+            return InternetArchiveSnapshot.from_record(record)
+
         resp = await self.client.aget(
             "http://web.archive.org/cdx/search/cdx?", req.into_params()
         )
-        return [CdxRecord.parse_line(line) for line in resp.splitlines()]
 
-    async def get_snapshot(self, url, snap_date):
-        return await self.client.aget(f"http://web.archive.org/web/{snap_date}/{url}")
+        return [to_snapshot(line) for line in resp.splitlines()]
+
+    async def fetch_and_parse_snapshot(self, snap: InternetArchiveSnapshot):
+        resp = await self.client.aget(snap.url)
+        return BeautifulSoup(resp, "html.parser")
 
 
 class WebPage:
@@ -103,15 +132,15 @@ async def get_latest_snaps():
         )
         return ia.search_snapshots(req)
 
-    async def get_snap(res):
-        snap = await ia.get_snapshot(res[-1].original, res[-1].timestamp)
-        page = WebPage(snap)
-        return page.get_top_articles_titles()
+    async def parse_snap(snap):
+        soup = await ia.fetch_and_parse_snapshot(snap)
+        return LeMondeMainPage(snap, soup).get_top_articles_titles()
 
-    results = await asyncio.gather(*[build_request(d) for d in dates])
-    top = await asyncio.gather(*[get_snap(r) for r in results])
+    snaps = await asyncio.gather(*[build_request(d) for d in dates])
+    top = await asyncio.gather(*[parse_snap(s[0]) for s in snaps])
     for t in top:
         print(t[0], t[-1])
+    print([InternetArchiveSnapshot.from_record(r[0]) for r in snaps])
 
 
 asyncio.run(get_latest_snaps())
