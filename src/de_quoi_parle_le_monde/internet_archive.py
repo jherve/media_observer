@@ -88,7 +88,7 @@ class InternetArchiveClient:
     client: HttpClient
     search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
-    async def search_snapshots(self, req: CdxRequest):
+    async def search_snapshots(self, req: CdxRequest) -> list[InternetArchiveSnapshot]:
         def to_snapshot(line):
             record = CdxRecord.parse_line(line)
             return InternetArchiveSnapshot.from_record(record)
@@ -97,6 +97,8 @@ class InternetArchiveClient:
 
         return [to_snapshot(line) for line in resp.splitlines()]
 
-    async def fetch_and_parse_snapshot(self, snap: InternetArchiveSnapshot):
+    async def fetch_and_parse_snapshot(
+        self, snap: InternetArchiveSnapshot
+    ) -> BeautifulSoup:
         resp = await self.client.aget(snap.url)
         return BeautifulSoup(resp, "lxml")
