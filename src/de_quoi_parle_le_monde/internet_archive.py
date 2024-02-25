@@ -87,4 +87,4 @@ class InternetArchiveClient:
 
     async def fetch_and_parse_snapshot(self, snap: InternetArchiveSnapshot):
         resp = await self.client.aget(snap.url)
-        return BeautifulSoup(resp, "html.parser")
+        return BeautifulSoup(resp, "lxml")

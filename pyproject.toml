@@ -14,6 +14,7 @@ dependencies = [
     "ruff>=0.2.2",
     "aiohttp>=3.9.3",
     "aiohttp-client-cache[all]>=0.11.0",
+    "lxml>=5.1.0",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
