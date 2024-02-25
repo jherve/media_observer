@@ -1,9 +1,11 @@
 import requests_cache
 from attrs import frozen
 from typing import Optional, ClassVar
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 import cattrs
 from bs4 import BeautifulSoup
+from aiohttp_client_cache import CachedSession, SQLiteBackend
+import asyncio
 
 
 @frozen
@@ -56,24 +58,31 @@ class CdxRequest:
 class HttpClient:
     def __init__(self):
         self.http_session = requests_cache.CachedSession("ia", backend="sqlite")
+        self.cache = SQLiteBackend("http")
 
     def get(self, url, params=None):
         return self.http_session.get(url, params)
 
+    async def aget(self, url, params=None):
+        async with CachedSession(cache=SQLiteBackend("http")) as session:
+            async with session.get(url, allow_redirects=True, params=params) as resp:
+                return await resp.text()
 
-class InternetArchive:
+
+class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
 
-    @staticmethod
-    def search_snapshots(req: CdxRequest):
-        resp = HttpClient().get(
+    def __init__(self):
+        self.client = HttpClient()
+
+    async def search_snapshots(self, req: CdxRequest):
+        resp = await self.client.aget(
             "http://web.archive.org/cdx/search/cdx?", req.into_params()
         )
-        return [CdxRecord.parse_line(line) for line in resp.text.splitlines()]
+        return [CdxRecord.parse_line(line) for line in resp.splitlines()]
 
-    @staticmethod
-    def get_snapshot(url, snap_date):
-        return HttpClient().get(f"http://web.archive.org/web/{snap_date}/{url}")
+    async def get_snapshot(self, url, snap_date):
+        return await self.client.aget(f"http://web.archive.org/web/{snap_date}/{url}")
 
 
 class WebPage:
@@ -84,19 +93,25 @@ class WebPage:
         return [s.text.strip() for s in self.soup.find_all("div", class_="top-article")]
 
 
-def get_latest_snap():
-    req = CdxRequest(
-        url="lemonde.fr",
-        from_=date.today(),
-        to_=date.today(),
-        limit=10,
-        filter="statuscode:200",
-    )
-    results = InternetArchive.search_snapshots(req)
+async def get_latest_snaps():
+    dates = [date.today() - timedelta(days=n) for n in range(0, 10)]
+    ia = InternetArchiveClient()
 
-    latest = results[-1]
-    print(latest)
-    return InternetArchive.get_snapshot(latest.original, latest.timestamp)
+    def build_request(d):
+        req = CdxRequest(
+            url="lemonde.fr", from_=d, to_=d, limit=10, filter="statuscode:200"
+        )
+        return ia.search_snapshots(req)
+
+    async def get_snap(res):
+        snap = await ia.get_snapshot(res[-1].original, res[-1].timestamp)
+        page = WebPage(snap)
+        return page.get_top_articles_titles()
+
+    results = await asyncio.gather(*[build_request(d) for d in dates])
+    top = await asyncio.gather(*[get_snap(r) for r in results])
+    for t in top:
+        print(t[0], t[-1])
 
 
-print(WebPage(get_latest_snap().text).get_top_articles_titles())
+asyncio.run(get_latest_snaps())

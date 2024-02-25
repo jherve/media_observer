@@ -12,6 +12,8 @@ dependencies = [
     "attrs>=23.2.0",
     "cattrs>=23.2.3",
     "ruff>=0.2.2",
+    "aiohttp>=3.9.3",
+    "aiohttp-client-cache[all]>=0.11.0",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
