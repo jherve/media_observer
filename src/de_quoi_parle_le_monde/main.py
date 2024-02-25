@@ -7,8 +7,10 @@ from de_quoi_parle_le_monde.le_monde import LeMondeArchive, LeMondeMainPage
 
 
 async def get_latest_snaps():
+    http_client = HttpClient()
+    ia = InternetArchiveClient(http_client)
+
     dates = [date.today() - timedelta(days=n) for n in range(0, 10)]
-    ia = InternetArchiveClient()
 
     async def req_and_parse_first_snap(date):
         req = CdxRequest(

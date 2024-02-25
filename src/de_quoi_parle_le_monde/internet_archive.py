@@ -68,20 +68,18 @@ class InternetArchiveSnapshot:
         return InternetArchiveSnapshot(timestamp=rec.timestamp, original=rec.original)
 
 
+@frozen
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
-
-    def __init__(self):
-        self.client = HttpClient()
+    client: HttpClient
+    search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
     async def search_snapshots(self, req: CdxRequest):
         def to_snapshot(line):
             record = CdxRecord.parse_line(line)
             return InternetArchiveSnapshot.from_record(record)
 
-        resp = await self.client.aget(
-            "http://web.archive.org/cdx/search/cdx?", req.into_params()
-        )
+        resp = await self.client.aget(self.search_url, req.into_params())
 
         return [to_snapshot(line) for line in resp.splitlines()]
 
