@@ -2,6 +2,7 @@ import requests
 import requests_cache
 from attrs import frozen
 from typing import Optional, ClassVar
+from datetime import date, datetime
 import cattrs
 from requests_cache.models.response import CachedResponse
 from requests_cache.backends.sqlite import SQLiteCache
@@ -29,17 +30,29 @@ class CdxRecord:
 class CdxRequest:
     url: str
     filter: Optional[str] = None
-    from_: Optional[str] = None
-    to_: Optional[str] = None
+    from_: Optional[date | datetime] = None
+    to_: Optional[date | datetime] = None
     limit: Optional[int] = None
-    translation_dict: ClassVar[dict] = dict(from_="from", to_="to")
 
-    def into_params(self):
-        return {self._translate_key(k): v for k, v in cattrs.unstructure(self).items()}
+    translation_dict: ClassVar[dict] = dict(from_="from", to_="to")
+    date_format: ClassVar[str] = "%Y%m%d"
+    datetime_format: ClassVar[str] = "%Y%m%d%H%M%S"
+
+    def into_params(self) -> dict[str, str]:
+        return {self._translate_key(k): self._stringify_value(v) for k, v in cattrs.unstructure(self).items()}
 
     @classmethod
-    def _translate_key(cls, key):
+    def _translate_key(cls, key: str) -> str:
         return cls.translation_dict.get(key, key)
+
+    @classmethod
+    def _stringify_value(cls, v) -> str:
+        if isinstance(v, date):
+            return v.strftime(cls.date_format)
+        elif isinstance(v, datetime):
+            return v.strftime(cls.datetime_format)
+        else:
+            return str(v)
 
 
 class InternetArchive:
@@ -63,7 +76,7 @@ class WebPage:
         return [s.text.strip() for s in self.soup.find_all("div", class_="top-article")]
 
 def get_latest_snap():
-    req = CdxRequest(url="lemonde.fr", from_="20240222", to_="20240222", limit=10, filter="statuscode:200")
+    req = CdxRequest(url="lemonde.fr", from_=date.today(), to_=date.today(), limit=10, filter="statuscode:200")
     results = InternetArchive.search_snapshots(req)
 
     latest = results[-1]
