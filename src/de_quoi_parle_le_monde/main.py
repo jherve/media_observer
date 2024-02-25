@@ -84,12 +84,22 @@ class InternetArchiveSnapshot:
 
 
 @frozen
+class LeMondeTopArticle:
+    title: str
+    url: str
+
+    @staticmethod
+    def from_soup(soup: BeautifulSoup):
+        return cattrs.structure(dict(title=soup.text.strip(), url=soup.find("a")["href"]), LeMondeTopArticle)
+
+
+@frozen
 class LeMondeMainPage:
     snapshot: InternetArchiveSnapshot
     soup: BeautifulSoup
 
-    def get_top_articles_titles(self):
-        return [s.text.strip() for s in self.soup.find_all("div", class_="top-article")]
+    def get_top_articles(self):
+        return [LeMondeTopArticle.from_soup(s) for s in self.soup.find_all("div", class_="top-article")]
 
 
 class InternetArchiveClient:
@@ -114,14 +124,6 @@ class InternetArchiveClient:
         return BeautifulSoup(resp, "html.parser")
 
 
-class WebPage:
-    def __init__(self, doc):
-        self.soup = BeautifulSoup(doc, "html.parser")
-
-    def get_top_articles_titles(self):
-        return [s.text.strip() for s in self.soup.find_all("div", class_="top-article")]
-
-
 async def get_latest_snaps():
     dates = [date.today() - timedelta(days=n) for n in range(0, 10)]
     ia = InternetArchiveClient()
@@ -134,13 +136,12 @@ async def get_latest_snaps():
 
     async def parse_snap(snap):
         soup = await ia.fetch_and_parse_snapshot(snap)
-        return LeMondeMainPage(snap, soup).get_top_articles_titles()
+        return LeMondeMainPage(snap, soup)
 
     snaps = await asyncio.gather(*[build_request(d) for d in dates])
     top = await asyncio.gather(*[parse_snap(s[0]) for s in snaps])
     for t in top:
-        print(t[0], t[-1])
-    print([InternetArchiveSnapshot.from_record(r[0]) for r in snaps])
+        print(t.get_top_articles()[0], t.get_top_articles()[-1])
 
 
 asyncio.run(get_latest_snaps())
