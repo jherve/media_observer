@@ -11,6 +11,7 @@ dependencies = [
     "beautifulsoup4>=4.12.3",
     "attrs>=23.2.0",
     "cattrs>=23.2.3",
+    "ruff>=0.2.2",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
