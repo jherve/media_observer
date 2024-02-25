@@ -5,8 +5,6 @@ from datetime import date, datetime
 import cattrs
 from bs4 import BeautifulSoup
 
-http_session = requests_cache.CachedSession("ia", backend="sqlite")
-
 
 @frozen
 class CdxRecord:
@@ -55,19 +53,27 @@ class CdxRequest:
             return str(v)
 
 
+class HttpClient:
+    def __init__(self):
+        self.http_session = requests_cache.CachedSession("ia", backend="sqlite")
+
+    def get(self, url, params=None):
+        return self.http_session.get(url, params)
+
+
 class InternetArchive:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
 
     @staticmethod
     def search_snapshots(req: CdxRequest):
-        resp = http_session.get(
+        resp = HttpClient().get(
             "http://web.archive.org/cdx/search/cdx?", req.into_params()
         )
         return [CdxRecord.parse_line(line) for line in resp.text.splitlines()]
 
     @staticmethod
     def get_snapshot(url, snap_date):
-        return http_session.get(f"http://web.archive.org/web/{snap_date}/{url}")
+        return HttpClient().get(f"http://web.archive.org/web/{snap_date}/{url}")
 
 
 class WebPage:
