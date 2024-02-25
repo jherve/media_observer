@@ -1,4 +1,5 @@
 from attrs import frozen
+from typing import ClassVar
 import cattrs
 from bs4 import BeautifulSoup
 
@@ -43,3 +44,8 @@ class LeMondeMainPage:
         return LeMondeMainArticle.from_soup(
             self.soup.find("div", class_="article--main")
         )
+
+
+@frozen
+class LeMondeArchive:
+    url: ClassVar[str] = "https://lemonde.fr"
