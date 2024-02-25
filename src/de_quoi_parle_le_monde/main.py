@@ -94,12 +94,26 @@ class LeMondeTopArticle:
 
 
 @frozen
+class LeMondeMainArticle:
+    title: str
+    url: str
+
+    @staticmethod
+    def from_soup(soup: BeautifulSoup):
+        attrs = dict(title=soup.find("h1").text.strip(), url=soup.find("a")["href"])
+        return cattrs.structure(attrs, LeMondeMainArticle)
+
+
+@frozen
 class LeMondeMainPage:
     snapshot: InternetArchiveSnapshot
     soup: BeautifulSoup
 
     def get_top_articles(self):
         return [LeMondeTopArticle.from_soup(s) for s in self.soup.find_all("div", class_="top-article")]
+
+    def main_article(self):
+        return LeMondeMainArticle.from_soup(self.soup.find("div", class_="article--main"))
 
 
 class InternetArchiveClient:
@@ -141,7 +155,7 @@ async def get_latest_snaps():
     snaps = await asyncio.gather(*[build_request(d) for d in dates])
     top = await asyncio.gather(*[parse_snap(s[0]) for s in snaps])
     for t in top:
-        print(t.get_top_articles()[0], t.get_top_articles()[-1])
+        print(t.get_top_articles()[0], t.main_article())
 
 
 asyncio.run(get_latest_snaps())
