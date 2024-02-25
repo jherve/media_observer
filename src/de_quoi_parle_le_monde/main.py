@@ -10,18 +10,16 @@ async def get_latest_snaps():
     dates = [date.today() - timedelta(days=n) for n in range(0, 10)]
     ia = InternetArchiveClient()
 
-    def build_request(d):
+    async def req_and_parse_first_snap(date):
         req = CdxRequest(
-            url="lemonde.fr", from_=d, to_=d, limit=10, filter="statuscode:200"
+            url="lemonde.fr", from_=date, to_=date, limit=10, filter="statuscode:200"
         )
-        return ia.search_snapshots(req)
-
-    async def parse_snap(snap):
+        snaps = await ia.search_snapshots(req)
+        snap = snaps[0]
         soup = await ia.fetch_and_parse_snapshot(snap)
         return LeMondeMainPage(snap, soup)
 
-    snaps = await asyncio.gather(*[build_request(d) for d in dates])
-    top = await asyncio.gather(*[parse_snap(s[0]) for s in snaps])
+    top = await asyncio.gather(*[req_and_parse_first_snap(d) for d in dates])
     for t in top:
         print(t.get_top_articles()[0], t.main_article())
 
