@@ -84,6 +84,12 @@ class InternetArchiveSnapshotId:
 
 
 @frozen
+class InternetArchiveSnapshot:
+    id: InternetArchiveSnapshotId
+    text: str
+
+
+@frozen
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
     session: HttpSession
@@ -100,9 +106,9 @@ class InternetArchiveClient:
 
         return [to_snapshot_id(line) for line in resp.splitlines()]
 
-    async def fetch(self, snap: InternetArchiveSnapshotId) -> str:
-        resp = await self.session.get(snap.url)
-        return resp
+    async def fetch(self, id_: InternetArchiveSnapshotId) -> str:
+        resp = await self.session.get(id_.url)
+        return InternetArchiveSnapshot(id_, resp)
 
     async def get_snapshot_id_closest_to(self, url, dt):
         req = CdxRequest(

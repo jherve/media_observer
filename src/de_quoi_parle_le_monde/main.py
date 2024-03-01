@@ -24,15 +24,15 @@ class ArchiveDownloader:
 
             async def handle_snap(dt):
                 id_closest = await ia.get_snapshot_id_closest_to(LeMondeArchive.url, dt)
-                closest_body = await ia.fetch(id_closest)
-                return await LeMondeMainPage.from_content(id_closest, closest_body)
+                closest = await ia.fetch(id_closest)
+                return await LeMondeMainPage.from_snapshot(closest)
 
             return await asyncio.gather(*[handle_snap(d) for d in dts])
 
 
 http_client = HttpClient()
 dler = ArchiveDownloader(http_client)
-snaps = asyncio.run(dler.get_latest_snaps(ArchiveDownloader.last_n_days(5)))
+snaps = asyncio.run(dler.get_latest_snaps(ArchiveDownloader.last_n_days(1)))
 
 for s in snaps:
-    print(s.snapshot.timestamp, s.get_top_articles()[0], s.main_article())
+    print(s.snapshot.id.timestamp, s.get_top_articles()[0], s.main_article())
