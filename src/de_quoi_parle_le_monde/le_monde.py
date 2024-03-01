@@ -25,7 +25,10 @@ class LeMondeMainArticle:
 
     @staticmethod
     def from_soup(soup: BeautifulSoup):
-        attrs = dict(title=soup.find("h1").text.strip(), url=soup.find("a")["href"])
+        attrs = dict(
+            title=soup.find("p", class_="article__title-label").text.strip(),
+            url=soup.find("a")["href"],
+        )
         return cattrs.structure(attrs, LeMondeMainArticle)
 
 
