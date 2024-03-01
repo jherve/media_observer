@@ -109,7 +109,12 @@ class InternetArchiveClient:
         req = CdxRequest(
             url=url,
             from_=dt - timedelta(hours=6.0),
-            to_=dt + timedelta(hours=6.0),
+            # It does not make sense to ask for snapshots in the future.
+            # In the case where the requested `dt` is in the future, this
+            # also allows to always send a new actual request and not
+            # hit the cache, but this is obviously an implementation detail
+            # of the HTTP layer that this client should not be aware of..
+            to_=min(dt + timedelta(hours=6.0), datetime.now()),
             filter="statuscode:200",
         )
 
