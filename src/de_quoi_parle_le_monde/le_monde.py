@@ -1,10 +1,15 @@
 from attrs import frozen
-from typing import ClassVar
 import asyncio
 from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
-from de_quoi_parle_le_monde.article import TopArticle, MainArticle, MainPage
+from de_quoi_parle_le_monde.article import (
+    TopArticle,
+    MainArticle,
+    MainPage,
+    ArchiveCollection,
+)
+
 
 class LeMondeTopArticle(TopArticle):
     ...
@@ -38,6 +43,6 @@ class LeMondeMainPage(MainPage):
         return LeMondeMainPage(snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup))
 
 
-@frozen
-class LeMondeArchive:
-    url: ClassVar[str] = "https://lemonde.fr"
+le_monde_collection = ArchiveCollection(
+    url="https://lemonde.fr", MainPageClass=LeMondeMainPage
+)

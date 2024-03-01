@@ -28,3 +28,9 @@ class MainPage(ABC):
     @abstractmethod
     async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
         ...
+
+
+@frozen
+class ArchiveCollection:
+    url: str
+    MainPageClass: type[MainPage]

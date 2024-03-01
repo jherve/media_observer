@@ -4,7 +4,7 @@ from attrs import frozen
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveClient
-from de_quoi_parle_le_monde.le_monde import LeMondeArchive, LeMondeMainPage
+from de_quoi_parle_le_monde.le_monde import le_monde_collection
 
 
 @frozen
@@ -23,9 +23,11 @@ class ArchiveDownloader:
             ia = InternetArchiveClient(session)
 
             async def handle_snap(dt):
-                id_closest = await ia.get_snapshot_id_closest_to(LeMondeArchive.url, dt)
+                id_closest = await ia.get_snapshot_id_closest_to(
+                    le_monde_collection.url, dt
+                )
                 closest = await ia.fetch(id_closest)
-                return await LeMondeMainPage.from_snapshot(closest)
+                return await le_monde_collection.MainPageClass.from_snapshot(closest)
 
             return await asyncio.gather(*[handle_snap(d) for d in dts])
 
