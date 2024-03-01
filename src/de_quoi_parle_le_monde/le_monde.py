@@ -4,7 +4,7 @@ import cattrs
 import asyncio
 from bs4 import BeautifulSoup
 
-from de_quoi_parle_le_monde.internet_archive import InternetArchiveRemoteSnapshot
+from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
 @frozen
@@ -35,7 +35,7 @@ class LeMondeMainArticle:
 
 @frozen
 class LeMondeMainPage:
-    snapshot: InternetArchiveRemoteSnapshot
+    snapshot_id: InternetArchiveSnapshotId
     soup: BeautifulSoup
 
     def get_top_articles(self):
@@ -51,11 +51,11 @@ class LeMondeMainPage:
 
     @staticmethod
     async def from_content(
-        remote_snapshot: InternetArchiveRemoteSnapshot, text: str
+        snapshot_id: InternetArchiveSnapshotId, text: str
     ) -> "LeMondeMainPage":
         loop = asyncio.get_event_loop()
         soup = await loop.run_in_executor(None, BeautifulSoup, text, "lxml")
-        return LeMondeMainPage(remote_snapshot, soup)
+        return LeMondeMainPage(snapshot_id, soup)
 
 
 @frozen

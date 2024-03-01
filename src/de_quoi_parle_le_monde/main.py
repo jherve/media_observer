@@ -23,11 +23,9 @@ class ArchiveDownloader:
             ia = InternetArchiveClient(session)
 
             async def handle_snap(dt):
-                closest = await ia.get_remote_snapshot_closest_to(
-                    LeMondeArchive.url, dt
-                )
-                closest_body = await ia.fetch(closest)
-                return await LeMondeMainPage.from_content(closest, closest_body)
+                id_closest = await ia.get_snapshot_id_closest_to(LeMondeArchive.url, dt)
+                closest_body = await ia.fetch(id_closest)
+                return await LeMondeMainPage.from_content(id_closest, closest_body)
 
             return await asyncio.gather(*[handle_snap(d) for d in dts])
 
