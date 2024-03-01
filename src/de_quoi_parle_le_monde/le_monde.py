@@ -1,4 +1,3 @@
-from attrs import frozen
 import asyncio
 from bs4 import BeautifulSoup
 
@@ -24,8 +23,10 @@ class LeMondeMainPage(MainPage):
     def get_top_articles(soup):
         all_articles = soup.find_all("div", class_="top-article")
         return [
-            LeMondeTopArticle(title=a.text.strip(), url=a.find("a")["href"])
-            for a in all_articles
+            LeMondeTopArticle(
+                title=a.text.strip(), url=a.find("a")["href"], rank=idx + 1
+            )
+            for idx, a in enumerate(all_articles)
         ]
 
     @staticmethod

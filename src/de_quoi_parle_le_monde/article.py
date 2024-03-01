@@ -9,6 +9,7 @@ from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 class TopArticle(ABC):
     title: str
     url: str
+    rank: int
 
 
 @frozen

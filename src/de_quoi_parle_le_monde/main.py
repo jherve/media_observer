@@ -5,6 +5,7 @@ from attrs import frozen
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveClient
 from de_quoi_parle_le_monde.le_monde import le_monde_collection
+from de_quoi_parle_le_monde.storage import Storage
 
 
 @frozen
@@ -30,11 +31,22 @@ class ArchiveDownloader:
             return await asyncio.gather(*[handle_snap(collection, d) for d in dts])
 
 
+async def main(dler):
+    storage = await Storage.create()
+    snaps = await dler.get_latest_snaps(
+        le_monde_collection, ArchiveDownloader.last_n_days(20)
+    )
+    for s in snaps:
+        await storage.add_main_article(
+            s.snapshot.id.timestamp, s.snapshot.id.original, s.main_article
+        )
+        for t in s.top_articles:
+            await storage.add_top_article(
+                s.snapshot.id.timestamp, s.snapshot.id.original, t
+            )
+
+
 http_client = HttpClient()
 dler = ArchiveDownloader(http_client)
-snaps = asyncio.run(
-    dler.get_latest_snaps(le_monde_collection, ArchiveDownloader.last_n_days(1))
-)
 
-for s in snaps:
-    print(s.snapshot.id.timestamp, s.top_articles[0], s.main_article)
+asyncio.run(main(dler))
