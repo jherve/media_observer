@@ -12,25 +12,11 @@ class LeMondeTopArticle:
     title: str
     url: str
 
-    @staticmethod
-    def from_soup(soup: BeautifulSoup):
-        return cattrs.structure(
-            dict(title=soup.text.strip(), url=soup.find("a")["href"]), LeMondeTopArticle
-        )
-
 
 @frozen
 class LeMondeMainArticle:
     title: str
     url: str
-
-    @staticmethod
-    def from_soup(soup: BeautifulSoup):
-        attrs = dict(
-            title=soup.find("p", class_="article__title-label").text.strip(),
-            url=soup.find("a")["href"],
-        )
-        return cattrs.structure(attrs, LeMondeMainArticle)
 
 
 @frozen
@@ -39,14 +25,17 @@ class LeMondeMainPage:
     soup: BeautifulSoup
 
     def get_top_articles(self):
+        all_articles = self.soup.find_all("div", class_="top-article")
         return [
-            LeMondeTopArticle.from_soup(s)
-            for s in self.soup.find_all("div", class_="top-article")
+            LeMondeTopArticle(title=a.text.strip(), url=a.find("a")["href"])
+            for a in all_articles
         ]
 
     def main_article(self):
-        return LeMondeMainArticle.from_soup(
-            self.soup.find("div", class_="article--main")
+        main = self.soup.find("div", class_="article--main")
+        return LeMondeMainArticle(
+            title=main.find("p", class_="article__title-label").text.strip(),
+            url=main.find("a")["href"],
         )
 
     @staticmethod
