@@ -2,9 +2,10 @@ from attrs import frozen
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
 import cattrs
+import asyncio
 from bs4 import BeautifulSoup
 
-from de_quoi_parle_le_monde.http import HttpClient
+from de_quoi_parle_le_monde.http import HttpSession
 
 Timestamp = NewType("Timestamp", datetime)
 datetime_format = "%Y%m%d%H%M%S"
@@ -87,7 +88,7 @@ class InternetArchiveSnapshot:
 @frozen
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
-    client: HttpClient
+    session: HttpSession
     search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
     async def search_snapshots(self, req: CdxRequest) -> list[InternetArchiveSnapshot]:
@@ -95,15 +96,17 @@ class InternetArchiveClient:
             record = CdxRecord.parse_line(line)
             return InternetArchiveSnapshot.from_record(record)
 
-        resp = await self.client.aget(self.search_url, req.into_params())
+        resp = await self.session.get(self.search_url, req.into_params())
 
         return [to_snapshot(line) for line in resp.splitlines()]
 
     async def fetch_and_parse_snapshot(
         self, snap: InternetArchiveSnapshot
     ) -> BeautifulSoup:
-        resp = await self.client.aget(snap.url)
-        return BeautifulSoup(resp, "lxml")
+        resp = await self.session.get(snap.url)
+        loop = asyncio.get_event_loop()
+        soup = await loop.run_in_executor(None, BeautifulSoup, resp, "lxml")
+        return soup
 
     async def get_snapshot_closest_to(self, url, dt):
         req = CdxRequest(
