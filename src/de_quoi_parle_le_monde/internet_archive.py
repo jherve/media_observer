@@ -2,8 +2,6 @@ from attrs import frozen
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
 import cattrs
-import asyncio
-from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.http import HttpSession
 

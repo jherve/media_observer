@@ -1,5 +1,5 @@
 from attrs import define
-from aiohttp_client_cache import CachedSession, SQLiteBackend
+from aiohttp_client_cache import SQLiteBackend
 from aiohttp_client_cache.session import CacheMixin
 from aiohttp.client import ClientSession
 from aiolimiter import AsyncLimiter
