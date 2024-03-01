@@ -21,8 +21,10 @@ class MainArticle(ABC):
 class MainPage(ABC):
     snapshot: InternetArchiveSnapshot
     soup: BeautifulSoup
+    top_articles: list[TopArticle]
+    main_article: MainArticle
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    async def from_snapshot(snapshot: InternetArchiveSnapshot):
+    async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
         ...

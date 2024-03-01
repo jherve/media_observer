@@ -35,4 +35,4 @@ dler = ArchiveDownloader(http_client)
 snaps = asyncio.run(dler.get_latest_snaps(ArchiveDownloader.last_n_days(1)))
 
 for s in snaps:
-    print(s.snapshot.id.timestamp, s.get_top_articles()[0], s.main_article())
+    print(s.snapshot.id.timestamp, s.top_articles[0], s.main_article)
