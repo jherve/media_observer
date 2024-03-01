@@ -50,7 +50,9 @@ class LeMondeMainPage:
         )
 
     @staticmethod
-    async def from_content(snapshot: InternetArchiveSnapshot, text: str) -> "LeMondeMainPage":
+    async def from_content(
+        snapshot: InternetArchiveSnapshot, text: str
+    ) -> "LeMondeMainPage":
         loop = asyncio.get_event_loop()
         soup = await loop.run_in_executor(None, BeautifulSoup, text, "lxml")
         return LeMondeMainPage(snapshot, soup)

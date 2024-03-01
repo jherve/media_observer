@@ -7,33 +7,32 @@ from de_quoi_parle_le_monde.internet_archive import InternetArchiveClient
 from de_quoi_parle_le_monde.le_monde import LeMondeArchive, LeMondeMainPage
 
 
-async def get_latest_snaps(dts):
-    http_client = HttpClient()
-
-    async with http_client.session() as session:
-        ia = InternetArchiveClient(session)
-
-        async def req_and_parse_first_snap(dt):
-            closest = await ia.get_snapshot_closest_to(LeMondeArchive.url, dt)
-            closest_body = await ia.fetch(closest)
-            return await LeMondeMainPage.from_content(closest, closest_body)
-
-        return await asyncio.gather(*[req_and_parse_first_snap(d) for d in dts])
-
-
 @frozen
 class ArchiveDownloader:
-    client: InternetArchiveClient
+    client: HttpClient
 
     @staticmethod
-    def from_http_client(http_client):
-        return ArchiveDownloader(InternetArchiveClient(http_client))
+    def last_n_days(n):
+        return [
+            datetime.combine(date.today() - timedelta(days=i), time(hour=18))
+            for i in range(0, n)
+        ]
+
+    async def get_latest_snaps(self, dts):
+        async with self.client.session() as session:
+            ia = InternetArchiveClient(session)
+
+            async def handle_snap(dt):
+                closest = await ia.get_snapshot_closest_to(LeMondeArchive.url, dt)
+                closest_body = await ia.fetch(closest)
+                return await LeMondeMainPage.from_content(closest, closest_body)
+
+            return await asyncio.gather(*[handle_snap(d) for d in dts])
 
 
-dts = [
-    datetime.combine(date.today() - timedelta(days=n), time(hour=18))
-    for n in range(0, 5)
-]
-snaps = asyncio.run(get_latest_snaps(dts))
+http_client = HttpClient()
+dler = ArchiveDownloader(http_client)
+snaps = asyncio.run(dler.get_latest_snaps(ArchiveDownloader.last_n_days(5)))
+
 for s in snaps:
     print(s.snapshot.timestamp, s.get_top_articles()[0], s.main_article())
