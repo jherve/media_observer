@@ -5,22 +5,18 @@ import asyncio
 from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
+from de_quoi_parle_le_monde.article import TopArticle, MainArticle, MainPage
+
+class LeMondeTopArticle(TopArticle):
+    ...
+
+
+class LeMondeMainArticle(MainArticle):
+    ...
 
 
 @frozen
-class LeMondeTopArticle:
-    title: str
-    url: str
-
-
-@frozen
-class LeMondeMainArticle:
-    title: str
-    url: str
-
-
-@frozen
-class LeMondeMainPage:
+class LeMondeMainPage(MainPage):
     snapshot: InternetArchiveSnapshot
     soup: BeautifulSoup
 
