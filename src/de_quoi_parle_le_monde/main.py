@@ -19,31 +19,40 @@ class ArchiveDownloader:
             for i in range(0, n)
         ]
 
-    async def get_latest_snaps(self, collection, dts):
+    async def get_latest_snaps(self, collection, dts, storage):
         async with self.client.session() as session:
             ia = InternetArchiveClient(session)
 
-            async def handle_snap(collection, dt):
+            async def handle_snap(collection, storage, dt):
                 id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
                 closest = await ia.fetch(id_closest)
-                return await collection.MainPageClass.from_snapshot(closest)
+                try:
+                    main_page = await collection.MainPageClass.from_snapshot(closest)
+                except AttributeError as e:
+                    print(f"error while processing {id_closest}")
+                    raise e
+                await storage.add_main_article(
+                    main_page.snapshot.id.timestamp,
+                    main_page.snapshot.id.original,
+                    main_page.main_article,
+                )
+                for t in main_page.top_articles:
+                    await storage.add_top_article(
+                        main_page.snapshot.id.timestamp,
+                        main_page.snapshot.id.original,
+                        t,
+                    )
 
-            return await asyncio.gather(*[handle_snap(collection, d) for d in dts])
+            return await asyncio.gather(
+                *[handle_snap(collection, storage, d) for d in dts]
+            )
 
 
 async def main(dler):
     storage = await Storage.create()
     snaps = await dler.get_latest_snaps(
-        le_monde_collection, ArchiveDownloader.last_n_days(20)
+        le_monde_collection, ArchiveDownloader.last_n_days(20), storage
     )
-    for s in snaps:
-        await storage.add_main_article(
-            s.snapshot.id.timestamp, s.snapshot.id.original, s.main_article
-        )
-        for t in s.top_articles:
-            await storage.add_top_article(
-                s.snapshot.id.timestamp, s.snapshot.id.original, t
-            )
 
 
 http_client = HttpClient()
