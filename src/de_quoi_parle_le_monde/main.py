@@ -18,23 +18,23 @@ class ArchiveDownloader:
             for i in range(0, n)
         ]
 
-    async def get_latest_snaps(self, dts):
+    async def get_latest_snaps(self, collection, dts):
         async with self.client.session() as session:
             ia = InternetArchiveClient(session)
 
-            async def handle_snap(dt):
-                id_closest = await ia.get_snapshot_id_closest_to(
-                    le_monde_collection.url, dt
-                )
+            async def handle_snap(collection, dt):
+                id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
                 closest = await ia.fetch(id_closest)
-                return await le_monde_collection.MainPageClass.from_snapshot(closest)
+                return await collection.MainPageClass.from_snapshot(closest)
 
-            return await asyncio.gather(*[handle_snap(d) for d in dts])
+            return await asyncio.gather(*[handle_snap(collection, d) for d in dts])
 
 
 http_client = HttpClient()
 dler = ArchiveDownloader(http_client)
-snaps = asyncio.run(dler.get_latest_snaps(ArchiveDownloader.last_n_days(1)))
+snaps = asyncio.run(
+    dler.get_latest_snaps(le_monde_collection, ArchiveDownloader.last_n_days(1))
+)
 
 for s in snaps:
     print(s.snapshot.id.timestamp, s.top_articles[0], s.main_article)
