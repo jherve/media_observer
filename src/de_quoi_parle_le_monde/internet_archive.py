@@ -100,13 +100,9 @@ class InternetArchiveClient:
 
         return [to_snapshot(line) for line in resp.splitlines()]
 
-    async def fetch_and_parse_snapshot(
-        self, snap: InternetArchiveSnapshot
-    ) -> BeautifulSoup:
+    async def fetch(self, snap: InternetArchiveSnapshot) -> str:
         resp = await self.session.get(snap.url)
-        loop = asyncio.get_event_loop()
-        soup = await loop.run_in_executor(None, BeautifulSoup, resp, "lxml")
-        return soup
+        return resp
 
     async def get_snapshot_closest_to(self, url, dt):
         req = CdxRequest(

@@ -1,6 +1,7 @@
 from attrs import frozen
 from typing import ClassVar
 import cattrs
+import asyncio
 from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
@@ -47,6 +48,12 @@ class LeMondeMainPage:
         return LeMondeMainArticle.from_soup(
             self.soup.find("div", class_="article--main")
         )
+
+    @staticmethod
+    async def from_content(snapshot: InternetArchiveSnapshot, text: str) -> "LeMondeMainPage":
+        loop = asyncio.get_event_loop()
+        soup = await loop.run_in_executor(None, BeautifulSoup, text, "lxml")
+        return LeMondeMainPage(snapshot, soup)
 
 
 @frozen

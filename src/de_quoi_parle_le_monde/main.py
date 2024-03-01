@@ -15,8 +15,8 @@ async def get_latest_snaps(dts):
 
         async def req_and_parse_first_snap(dt):
             closest = await ia.get_snapshot_closest_to(LeMondeArchive.url, dt)
-            closest_content = await ia.fetch_and_parse_snapshot(closest)
-            return LeMondeMainPage(closest, closest_content)
+            closest_body = await ia.fetch(closest)
+            return await LeMondeMainPage.from_content(closest, closest_body)
 
         return await asyncio.gather(*[req_and_parse_first_snap(d) for d in dts])
 
