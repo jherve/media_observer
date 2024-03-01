@@ -72,7 +72,7 @@ class CdxRequest:
 
 
 @frozen
-class InternetArchiveSnapshot:
+class InternetArchiveRemoteSnapshot:
     timestamp: Timestamp
     original: str
 
@@ -82,7 +82,9 @@ class InternetArchiveSnapshot:
 
     @staticmethod
     def from_record(rec: CdxRecord):
-        return InternetArchiveSnapshot(timestamp=rec.timestamp, original=rec.original)
+        return InternetArchiveRemoteSnapshot(
+            timestamp=rec.timestamp, original=rec.original
+        )
 
 
 @frozen
@@ -91,20 +93,22 @@ class InternetArchiveClient:
     session: HttpSession
     search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
-    async def search_snapshots(self, req: CdxRequest) -> list[InternetArchiveSnapshot]:
-        def to_snapshot(line):
+    async def search_remote_snapshots(
+        self, req: CdxRequest
+    ) -> list[InternetArchiveRemoteSnapshot]:
+        def to_remote_snapshot(line):
             record = CdxRecord.parse_line(line)
-            return InternetArchiveSnapshot.from_record(record)
+            return InternetArchiveRemoteSnapshot.from_record(record)
 
         resp = await self.session.get(self.search_url, req.into_params())
 
-        return [to_snapshot(line) for line in resp.splitlines()]
+        return [to_remote_snapshot(line) for line in resp.splitlines()]
 
-    async def fetch(self, snap: InternetArchiveSnapshot) -> str:
+    async def fetch(self, snap: InternetArchiveRemoteSnapshot) -> str:
         resp = await self.session.get(snap.url)
         return resp
 
-    async def get_snapshot_closest_to(self, url, dt):
+    async def get_remote_snapshot_closest_to(self, url, dt):
         req = CdxRequest(
             url=url,
             from_=dt - timedelta(hours=6.0),
@@ -117,6 +121,6 @@ class InternetArchiveClient:
             filter="statuscode:200",
         )
 
-        all_snaps = await self.search_snapshots(req)
+        all_snaps = await self.search_remote_snapshots(req)
         closest = min(all_snaps, key=lambda s: abs(s.timestamp - dt))
         return closest
