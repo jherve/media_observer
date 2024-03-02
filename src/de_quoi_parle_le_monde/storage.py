@@ -28,6 +28,12 @@ class Storage:
             )
             await conn.execute(
                 """
+                CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_timestamp_site
+                ON main_articles (timestamp, site);
+            """
+            )
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS top_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT,
@@ -38,13 +44,20 @@ class Storage:
                 );
                 """
             )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_timestamp_site_rank
+                ON top_articles (timestamp, site, rank);
+                """
+            )
 
     async def add_main_article(self, timestamp: str, site: str, article: MainArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
                 """
                 INSERT INTO main_articles (timestamp, site, title, url)
-                VALUES (?, ?, ?, ?);
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT DO NOTHING;
                 """,
                 [timestamp, site, article.title, article.url],
             )
@@ -55,7 +68,8 @@ class Storage:
             await conn.execute_insert(
                 """
                 INSERT INTO top_articles (timestamp, site, title, url, rank)
-                VALUES (?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT DO NOTHING;
                 """,
                 [timestamp, site, article.title, article.url, article.rank],
             )
