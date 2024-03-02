@@ -6,7 +6,6 @@ from de_quoi_parle_le_monde.article import (
     TopArticle,
     MainArticle,
     MainPage,
-    ArchiveCollection,
 )
 
 
@@ -54,8 +53,3 @@ class FranceTvInfoMainPage(MainPage):
         return FranceTvInfoMainPage(
             snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
         )
-
-
-france_tv_info_collection = ArchiveCollection(
-    url="https://francetvinfo.fr", MainPageClass=FranceTvInfoMainPage
-)

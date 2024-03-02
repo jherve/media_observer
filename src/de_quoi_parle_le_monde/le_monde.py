@@ -6,7 +6,6 @@ from de_quoi_parle_le_monde.article import (
     TopArticle,
     MainArticle,
     MainPage,
-    ArchiveCollection,
 )
 
 
@@ -46,8 +45,3 @@ class LeMondeMainPage(MainPage):
         return LeMondeMainPage(
             snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
         )
-
-
-le_monde_collection = ArchiveCollection(
-    url="https://lemonde.fr", MainPageClass=LeMondeMainPage
-)
