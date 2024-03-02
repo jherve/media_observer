@@ -1,6 +1,7 @@
 import aiosqlite
 
 from de_quoi_parle_le_monde.article import MainArticle, TopArticle
+from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
 class Storage:
@@ -15,6 +16,22 @@ class Storage:
 
     async def _create_db(self):
         async with aiosqlite.connect(self.conn_str) as conn:
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS snapshots (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT,
+                    site TEXT
+                );
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_site
+                ON snapshots (timestamp, site);
+                """
+            )
+
             await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS main_articles (
@@ -50,6 +67,31 @@ class Storage:
                 ON top_articles (timestamp, site, rank);
                 """
             )
+
+    async def add_snapshot(self, snapshot: InternetArchiveSnapshotId) -> int:
+        params = [snapshot.timestamp, snapshot.original]
+        async with aiosqlite.connect(self.conn_str) as conn:
+            id_, = await conn.execute_insert(
+                """
+                INSERT INTO snapshots (timestamp, site)
+                VALUES (?, ?)
+                ON CONFLICT DO NOTHING;
+                """,
+                params
+            )
+
+            if id_ == 0:
+                [(id_,)] = await conn.execute_fetchall(
+                    """
+                    SELECT id
+                    FROM snapshots
+                    WHERE timestamp = ? AND site = ?
+                    """,
+                    params
+                )
+
+            await conn.commit()
+            return id_
 
     async def add_main_article(self, timestamp: str, site: str, article: MainArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
