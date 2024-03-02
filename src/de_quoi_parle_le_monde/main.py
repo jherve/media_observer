@@ -31,7 +31,7 @@ class ArchiveDownloader:
                 except AttributeError as e:
                     print(f"error while processing {id_closest}")
                     raise e
-                await storage.add_snapshot(main_page.snapshot.id)
+                await storage.add_snapshot(main_page.snapshot.id, dt)
                 await storage.add_main_article(
                     main_page.snapshot.id.timestamp,
                     main_page.snapshot.id.original,

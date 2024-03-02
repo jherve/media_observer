@@ -1,4 +1,5 @@
 import aiosqlite
+from datetime import datetime
 
 from de_quoi_parle_le_monde.article import MainArticle, TopArticle
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
@@ -21,14 +22,15 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT,
+                    timestamp_virtual TEXT,
                     site TEXT
                 );
                 """
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_site
-                ON snapshots (timestamp, site);
+                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site
+                ON snapshots (timestamp_virtual, site);
                 """
             )
 
@@ -68,16 +70,17 @@ class Storage:
                 """
             )
 
-    async def add_snapshot(self, snapshot: InternetArchiveSnapshotId) -> int:
-        params = [snapshot.timestamp, snapshot.original]
+    async def add_snapshot(
+        self, snapshot: InternetArchiveSnapshotId, virtual: datetime
+    ) -> int:
         async with aiosqlite.connect(self.conn_str) as conn:
-            id_, = await conn.execute_insert(
+            (id_,) = await conn.execute_insert(
                 """
-                INSERT INTO snapshots (timestamp, site)
-                VALUES (?, ?)
+                INSERT INTO snapshots (timestamp, site, timestamp_virtual)
+                VALUES (?, ?, ?)
                 ON CONFLICT DO NOTHING;
                 """,
-                params
+                [snapshot.timestamp, snapshot.original, virtual],
             )
 
             if id_ == 0:
@@ -85,9 +88,9 @@ class Storage:
                     """
                     SELECT id
                     FROM snapshots
-                    WHERE timestamp = ? AND site = ?
+                    WHERE timestamp_virtual = ? AND site = ?
                     """,
-                    params
+                    [virtual, snapshot.original],
                 )
 
             await conn.commit()
