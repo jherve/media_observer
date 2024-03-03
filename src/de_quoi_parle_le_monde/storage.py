@@ -86,11 +86,7 @@ class Storage:
     async def add_site(self, original_url: str) -> int:
         async with aiosqlite.connect(self.conn_str) as conn:
             (id_,) = await conn.execute_insert(
-                """
-                INSERT INTO sites (original_url)
-                VALUES (?)
-                ON CONFLICT DO NOTHING;
-                """,
+                self._insert_stmt("sites", ["original_url"]),
                 [original_url],
             )
 
@@ -112,11 +108,9 @@ class Storage:
     ) -> int:
         async with aiosqlite.connect(self.conn_str) as conn:
             (id_,) = await conn.execute_insert(
-                """
-                INSERT INTO snapshots (timestamp, site_id, timestamp_virtual)
-                VALUES (?, ?, ?)
-                ON CONFLICT DO NOTHING;
-                """,
+                self._insert_stmt(
+                    "snapshots", ["timestamp", "site_id", "timestamp_virtual"]
+                ),
                 [snapshot.timestamp, site_id, virtual],
             )
 
@@ -136,11 +130,7 @@ class Storage:
     async def add_main_article(self, snapshot_id: int, article: MainArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
-                """
-                INSERT INTO main_articles (snapshot_id, title, url)
-                VALUES (?, ?, ?)
-                ON CONFLICT DO NOTHING;
-                """,
+                self._insert_stmt("main_articles", ["snapshot_id", "title", "url"]),
                 [snapshot_id, article.title, article.url],
             )
             await conn.commit()
@@ -148,11 +138,19 @@ class Storage:
     async def add_top_article(self, snapshot_id: int, article: TopArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
-                """
-                INSERT INTO top_articles (snapshot_id, title, url, rank)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT DO NOTHING;
-                """,
+                self._insert_stmt(
+                    "top_articles", ["snapshot_id", "title", "url", "rank"]
+                ),
                 [snapshot_id, article.title, article.url, article.rank],
             )
             await conn.commit()
+
+    @staticmethod
+    def _insert_stmt(table, cols):
+        cols_str = ", ".join(cols)
+        placeholders = ", ".join(("?" for c in cols))
+        return f"""
+            INSERT INTO {table} ({cols_str})
+            VALUES ({placeholders})
+            ON CONFLICT DO NOTHING;
+        """
