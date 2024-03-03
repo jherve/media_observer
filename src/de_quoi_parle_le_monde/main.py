@@ -3,7 +3,10 @@ import asyncio
 from attrs import frozen
 
 from de_quoi_parle_le_monde.http import HttpClient
-from de_quoi_parle_le_monde.internet_archive import InternetArchiveClient
+from de_quoi_parle_le_monde.internet_archive import (
+    InternetArchiveClient,
+    SnapshotNotYetAvailable,
+)
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
 
@@ -21,7 +24,12 @@ class ArchiveDownloader:
 
     @staticmethod
     async def handle_snap(ia, collection, storage, dt):
-        id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
+        try:
+            id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
+        except SnapshotNotYetAvailable as e:
+            print(f"Snapshot for {collection.url} @ {dt} not yet available")
+            raise e
+
         closest = await ia.fetch(id_closest)
 
         try:
@@ -49,7 +57,8 @@ async def main(dler: ArchiveDownloader):
                 ArchiveDownloader.handle_snap(ia, c, storage, d)
                 for d in dts
                 for c in media_collection.values()
-            ]
+            ],
+            return_exceptions=True,
         )
 
 

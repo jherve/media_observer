@@ -69,6 +69,10 @@ class CdxRequest:
             return str(v)
 
 
+class SnapshotNotYetAvailable(Exception):
+    timestamp: datetime
+
+
 @frozen
 class InternetArchiveSnapshotId:
     timestamp: Timestamp
@@ -124,5 +128,7 @@ class InternetArchiveClient:
         )
 
         all_snaps = await self.search_snapshots(req)
-        closest = min(all_snaps, key=lambda s: abs(s.timestamp - dt))
-        return closest
+        if all_snaps:
+            return min(all_snaps, key=lambda s: abs(s.timestamp - dt))
+        else:
+            raise SnapshotNotYetAvailable(dt)
