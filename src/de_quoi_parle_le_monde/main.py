@@ -19,35 +19,38 @@ class ArchiveDownloader:
             for i in range(1, n)
         ]
 
-    async def get_latest_snaps(self, collection, dts, storage):
-        async with self.client.session() as session:
-            ia = InternetArchiveClient(session)
+    @staticmethod
+    async def handle_snap(ia, collection, storage, dt):
+        id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
+        closest = await ia.fetch(id_closest)
 
-            async def handle_snap(collection, storage, dt):
-                id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
-                closest = await ia.fetch(id_closest)
-                try:
-                    main_page = await collection.MainPageClass.from_snapshot(closest)
-                except AttributeError as e:
-                    print(f"error while processing {id_closest}")
-                    raise e
-                site_id = await storage.add_site(collection.url)
-                snapshot_id = await storage.add_snapshot(
-                    site_id, main_page.snapshot.id, dt
-                )
-                await storage.add_main_article(snapshot_id, main_page.main_article)
-                for t in main_page.top_articles:
-                    await storage.add_top_article(snapshot_id, t)
+        try:
+            main_page = await collection.MainPageClass.from_snapshot(closest)
+        except AttributeError as e:
+            print(f"error while processing {id_closest}")
+            raise e
 
-            return await asyncio.gather(
-                *[handle_snap(collection, storage, d) for d in dts]
-            )
+        site_id = await storage.add_site(collection.url)
+        snapshot_id = await storage.add_snapshot(site_id, main_page.snapshot.id, dt)
+        await storage.add_main_article(snapshot_id, main_page.main_article)
+        for t in main_page.top_articles:
+            await storage.add_top_article(snapshot_id, t)
 
 
-async def main(dler):
+async def main(dler: ArchiveDownloader):
     storage = await Storage.create()
-    for c in media_collection.values():
-        await dler.get_latest_snaps(c, ArchiveDownloader.last_n_days(20), storage)
+    dts = ArchiveDownloader.last_n_days(20)
+
+    async with dler.client.session() as session:
+        ia = InternetArchiveClient(session)
+
+        return await asyncio.gather(
+            *[
+                ArchiveDownloader.handle_snap(ia, c, storage, d)
+                for d in dts
+                for c in media_collection.values()
+            ]
+        )
 
 
 http_client = HttpClient()
