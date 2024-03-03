@@ -36,16 +36,16 @@ class Storage:
                 """
                 CREATE TABLE IF NOT EXISTS snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    site_id INTEGER REFERENCES sites (id) ON DELETE CASCADE,
                     timestamp TEXT,
-                    timestamp_virtual TEXT,
-                    site TEXT
+                    timestamp_virtual TEXT
                 );
                 """
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site
-                ON snapshots (timestamp_virtual, site);
+                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site_id
+                ON snapshots (timestamp_virtual, site_id);
                 """
             )
 
@@ -108,16 +108,16 @@ class Storage:
             return id_
 
     async def add_snapshot(
-        self, snapshot: InternetArchiveSnapshotId, virtual: datetime
+        self, site_id: int, snapshot: InternetArchiveSnapshotId, virtual: datetime
     ) -> int:
         async with aiosqlite.connect(self.conn_str) as conn:
             (id_,) = await conn.execute_insert(
                 """
-                INSERT INTO snapshots (timestamp, site, timestamp_virtual)
+                INSERT INTO snapshots (timestamp, site_id, timestamp_virtual)
                 VALUES (?, ?, ?)
                 ON CONFLICT DO NOTHING;
                 """,
-                [snapshot.timestamp, snapshot.original, virtual],
+                [snapshot.timestamp, site_id, virtual],
             )
 
             if id_ == 0:
@@ -125,9 +125,9 @@ class Storage:
                     """
                     SELECT id
                     FROM snapshots
-                    WHERE timestamp_virtual = ? AND site = ?
+                    WHERE timestamp_virtual = ? AND site_id = ?
                     """,
-                    [virtual, snapshot.original],
+                    [virtual, site_id],
                 )
 
             await conn.commit()

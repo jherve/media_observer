@@ -32,7 +32,9 @@ class ArchiveDownloader:
                     print(f"error while processing {id_closest}")
                     raise e
                 site_id = await storage.add_site(collection.url)
-                snapshot_id = await storage.add_snapshot(main_page.snapshot.id, dt)
+                snapshot_id = await storage.add_snapshot(
+                    site_id, main_page.snapshot.id, dt
+                )
                 await storage.add_main_article(snapshot_id, main_page.main_article)
                 for t in main_page.top_articles:
                     await storage.add_top_article(snapshot_id, t)
