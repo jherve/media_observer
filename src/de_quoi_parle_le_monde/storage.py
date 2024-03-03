@@ -19,6 +19,21 @@ class Storage:
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS sites (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    original_url TEXT
+                );
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_original_url
+                ON sites (original_url);
+                """
+            )
+
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT,
@@ -67,6 +82,30 @@ class Storage:
                 ON top_articles (snapshot_id, rank);
                 """
             )
+
+    async def add_site(self, original_url: str) -> int:
+        async with aiosqlite.connect(self.conn_str) as conn:
+            (id_,) = await conn.execute_insert(
+                """
+                INSERT INTO sites (original_url)
+                VALUES (?)
+                ON CONFLICT DO NOTHING;
+                """,
+                [original_url],
+            )
+
+            if id_ == 0:
+                [(id_,)] = await conn.execute_fetchall(
+                    """
+                    SELECT id
+                    FROM sites
+                    WHERE original_url = ?
+                    """,
+                    [original_url],
+                )
+
+            await conn.commit()
+            return id_
 
     async def add_snapshot(
         self, snapshot: InternetArchiveSnapshotId, virtual: datetime
