@@ -38,8 +38,7 @@ class Storage:
                 """
                 CREATE TABLE IF NOT EXISTS main_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT,
-                    site TEXT,
+                    snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
                     title TEXT,
                     url TEXT
                 );
@@ -47,16 +46,15 @@ class Storage:
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_timestamp_site
-                ON main_articles (timestamp, site);
+                CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_snapshot_id
+                ON main_articles (snapshot_id);
             """
             )
             await conn.execute(
                 """
                 CREATE TABLE IF NOT EXISTS top_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    timestamp TEXT,
-                    site TEXT,
+                    snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
                     title TEXT,
                     url TEXT,
                     rank INTEGER
@@ -65,8 +63,8 @@ class Storage:
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_timestamp_site_rank
-                ON top_articles (timestamp, site, rank);
+                CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_snapshot_id_rank
+                ON top_articles (snapshot_id, rank);
                 """
             )
 
@@ -96,26 +94,26 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_main_article(self, timestamp: str, site: str, article: MainArticle):
+    async def add_main_article(self, snapshot_id: int, article: MainArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
                 """
-                INSERT INTO main_articles (timestamp, site, title, url)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO main_articles (snapshot_id, title, url)
+                VALUES (?, ?, ?)
                 ON CONFLICT DO NOTHING;
                 """,
-                [timestamp, site, article.title, article.url],
+                [snapshot_id, article.title, article.url],
             )
             await conn.commit()
 
-    async def add_top_article(self, timestamp: str, site: str, article: TopArticle):
+    async def add_top_article(self, snapshot_id: int, article: TopArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
                 """
-                INSERT INTO top_articles (timestamp, site, title, url, rank)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO top_articles (snapshot_id, title, url, rank)
+                VALUES (?, ?, ?, ?)
                 ON CONFLICT DO NOTHING;
                 """,
-                [timestamp, site, article.title, article.url, article.rank],
+                [snapshot_id, article.title, article.url, article.rank],
             )
             await conn.commit()
