@@ -70,8 +70,7 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS main_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    title TEXT,
-                    url TEXT
+                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE
                 );
                 """
             )
@@ -86,8 +85,7 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS top_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    title TEXT,
-                    url TEXT,
+                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE,
                     rank INTEGER
                 );
                 """
@@ -104,17 +102,20 @@ class Storage:
                 CREATE VIEW IF NOT EXISTS main_articles_view AS
                     SELECT
                         si.id AS site_id,
-                        si.original_url AS original_url,
                         s.id AS snapshot_id,
+                        fa.id AS featured_article_id,
+                        si.original_url AS original_url,
                         s.timestamp_virtual,
-                        m.title,
-                        m.url
+                        fa.title,
+                        fa.url
                     FROM
                         main_articles as m
                     JOIN
                         snapshots AS s ON s.id = m.snapshot_id
                     JOIN
                         sites AS si ON si.id = s.site_id
+                    JOIN
+                        featured_articles AS fa ON m.featured_article_id = fa.id
                 """
             )
 
@@ -123,11 +124,12 @@ class Storage:
                 CREATE VIEW IF NOT EXISTS top_articles_view AS
                     SELECT
                         si.id AS site_id,
-                        si.original_url AS original_url,
                         s.id AS snapshot_id,
+                        fa.id AS featured_article_id,
+                        si.original_url AS original_url,
                         s.timestamp_virtual,
-                        t.title,
-                        t.url,
+                        fa.title,
+                        fa.url,
                         t.rank
                     FROM
                         top_articles as t
@@ -135,6 +137,8 @@ class Storage:
                         snapshots AS s ON s.id = t.snapshot_id
                     JOIN
                         sites AS si ON si.id = s.site_id
+                    JOIN
+                        featured_articles AS fa ON t.featured_article_id = fa.id
                 """
             )
 
@@ -202,21 +206,21 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_main_article(self, snapshot_id: int, article: MainArticle):
+    async def add_main_article(self, snapshot_id: int, article_id: int):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
-                self._insert_stmt("main_articles", ["snapshot_id", "title", "url"]),
-                [snapshot_id, article.article.title, article.article.url],
+                self._insert_stmt("main_articles", ["snapshot_id", "featured_article_id"]),
+                [snapshot_id, article_id],
             )
             await conn.commit()
 
-    async def add_top_article(self, snapshot_id: int, article: TopArticle):
+    async def add_top_article(self, snapshot_id: int, article_id: int, article: TopArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
                 self._insert_stmt(
-                    "top_articles", ["snapshot_id", "title", "url", "rank"]
+                    "top_articles", ["snapshot_id", "featured_article_id", "rank"]
                 ),
-                [snapshot_id, article.article.title, article.article.url, article.rank],
+                [snapshot_id, article_id, article.rank],
             )
             await conn.commit()
 
