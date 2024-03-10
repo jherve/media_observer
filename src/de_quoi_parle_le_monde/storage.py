@@ -83,6 +83,45 @@ class Storage:
                 """
             )
 
+            await conn.execute(
+                """
+                CREATE VIEW IF NOT EXISTS main_articles_view AS
+                    SELECT
+                        si.id AS site_id,
+                        si.original_url AS original_url,
+                        s.id AS snapshot_id,
+                        s.timestamp_virtual,
+                        m.title,
+                        m.url
+                    FROM
+                        main_articles as m
+                    JOIN
+                        snapshots AS s ON s.id = m.snapshot_id
+                    JOIN
+                        sites AS si ON si.id = s.site_id
+                """
+            )
+
+            await conn.execute(
+                """
+                CREATE VIEW IF NOT EXISTS top_articles_view AS
+                    SELECT
+                        si.id AS site_id,
+                        si.original_url AS original_url,
+                        s.id AS snapshot_id,
+                        s.timestamp_virtual,
+                        t.title,
+                        t.url,
+                        t.rank
+                    FROM
+                        top_articles as t
+                    JOIN
+                        snapshots AS s ON s.id = t.snapshot_id
+                    JOIN
+                        sites AS si ON si.id = s.site_id
+                """
+            )
+
     async def add_site(self, original_url: str) -> int:
         async with aiosqlite.connect(self.conn_str) as conn:
             (id_,) = await conn.execute_insert(
