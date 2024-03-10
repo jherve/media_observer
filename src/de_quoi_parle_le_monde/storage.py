@@ -51,6 +51,22 @@ class Storage:
 
             await conn.execute(
                 """
+                CREATE TABLE IF NOT EXISTS featured_articles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    title TEXT,
+                    url TEXT
+                );
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_idx_title_url
+                ON featured_articles (title, url);
+                """
+            )
+
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS main_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
@@ -166,6 +182,26 @@ class Storage:
             await conn.commit()
             return id_
 
+    async def add_featured_article(self, url, title):
+        async with aiosqlite.connect(self.conn_str) as conn:
+            (id_,) = await conn.execute_insert(
+                self._insert_stmt("featured_articles", ["title", "url"]),
+                [title, url],
+            )
+
+            if id_ == 0:
+                [(id_,)] = await conn.execute_fetchall(
+                    """
+                    SELECT id
+                    FROM featured_articles
+                    WHERE title = ? AND url = ?
+                    """,
+                    [title, url],
+                )
+
+            await conn.commit()
+            return id_
+
     async def add_main_article(self, snapshot_id: int, article: MainArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
@@ -183,6 +219,15 @@ class Storage:
                 [snapshot_id, article.title, article.url, article.rank],
             )
             await conn.commit()
+
+    async def select_from(self, table):
+        async with aiosqlite.connect(self.conn_str) as conn:
+            return await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM {table}
+                """,
+            )
 
     @staticmethod
     def _insert_stmt(table, cols):
