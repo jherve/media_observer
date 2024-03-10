@@ -6,16 +6,20 @@ from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 
 
 @frozen
-class TopArticle(ABC):
+class FeaturedArticle(ABC):
     title: str
     url: str
+
+
+@frozen
+class TopArticle(ABC):
+    article: FeaturedArticle
     rank: int
 
 
 @frozen
 class MainArticle(ABC):
-    title: str
-    url: str
+    article: FeaturedArticle
 
 
 @frozen

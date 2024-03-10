@@ -40,8 +40,12 @@ class ArchiveDownloader:
 
         site_id = await storage.add_site(collection.url)
         snapshot_id = await storage.add_snapshot(site_id, main_page.snapshot.id, dt)
+
+        main = await storage.add_featured_article(main_page.main_article.article)
         await storage.add_main_article(snapshot_id, main_page.main_article)
+
         for t in main_page.top_articles:
+            article = await storage.add_featured_article(t.article)
             await storage.add_top_article(snapshot_id, t)
 
 

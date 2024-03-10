@@ -1,7 +1,7 @@
 import aiosqlite
 from datetime import datetime
 
-from de_quoi_parle_le_monde.article import MainArticle, TopArticle
+from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticle
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
@@ -182,11 +182,11 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_featured_article(self, url, title):
+    async def add_featured_article(self, article: FeaturedArticle):
         async with aiosqlite.connect(self.conn_str) as conn:
             (id_,) = await conn.execute_insert(
                 self._insert_stmt("featured_articles", ["title", "url"]),
-                [title, url],
+                [article.title, article.url],
             )
 
             if id_ == 0:
@@ -196,7 +196,7 @@ class Storage:
                     FROM featured_articles
                     WHERE title = ? AND url = ?
                     """,
-                    [title, url],
+                    [article.title, article.url],
                 )
 
             await conn.commit()
@@ -206,7 +206,7 @@ class Storage:
         async with aiosqlite.connect(self.conn_str) as conn:
             await conn.execute_insert(
                 self._insert_stmt("main_articles", ["snapshot_id", "title", "url"]),
-                [snapshot_id, article.title, article.url],
+                [snapshot_id, article.article.title, article.article.url],
             )
             await conn.commit()
 
@@ -216,7 +216,7 @@ class Storage:
                 self._insert_stmt(
                     "top_articles", ["snapshot_id", "title", "url", "rank"]
                 ),
-                [snapshot_id, article.title, article.url, article.rank],
+                [snapshot_id, article.article.title, article.article.url, article.rank],
             )
             await conn.commit()
 

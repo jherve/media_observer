@@ -3,17 +3,14 @@ from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 from de_quoi_parle_le_monde.article import (
+    FeaturedArticle,
     TopArticle,
     MainArticle,
     MainPage,
 )
 
 
-class FranceTvInfoTopArticle(TopArticle):
-    ...
-
-
-class FranceTvInfoMainArticle(MainArticle):
+class FranceTvInfoFeaturedArticle(FeaturedArticle):
     ...
 
 
@@ -22,9 +19,13 @@ class FranceTvInfoMainPage(MainPage):
     def get_top_articles(soup):
         all_articles = soup.find_all("article", class_="card-article-most-read")
         return [
-            FranceTvInfoTopArticle(
-                title=a.find("p", class_="card-article-most-read__title").text.strip(),
-                url=a.find("a")["href"],
+            TopArticle(
+                article=FranceTvInfoFeaturedArticle(
+                    title=a.find(
+                        "p", class_="card-article-most-read__title"
+                    ).text.strip(),
+                    url=a.find("a")["href"],
+                ),
                 rank=idx + 1,
             )
             for idx, a in enumerate(all_articles)
@@ -39,9 +40,11 @@ class FranceTvInfoMainPage(MainPage):
             class_="card-article-actu-forte__title"
         )
 
-        return FranceTvInfoMainArticle(
-            title=title.text.strip(),
-            url=main.find("a")["href"],
+        return MainArticle(
+            article=FranceTvInfoFeaturedArticle(
+                title=title.text.strip(),
+                url=main.find("a")["href"],
+            )
         )
 
     @classmethod
