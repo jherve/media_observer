@@ -20,7 +20,7 @@ class LeMondeMainPage(MainPage):
         all_articles = soup.find_all("div", class_="top-article")
         return [
             TopArticle(
-                article=LeMondeFeaturedArticle(
+                article=LeMondeFeaturedArticle.create(
                     title=a.text.strip(), url=a.find("a")["href"]
                 ),
                 rank=idx + 1,
@@ -32,7 +32,7 @@ class LeMondeMainPage(MainPage):
     def get_main_article(soup):
         main = soup.find("div", class_="article--main")
         return MainArticle(
-            article=LeMondeFeaturedArticle(
+            article=LeMondeFeaturedArticle.create(
                 title=main.find("p", class_="article__title-label").text.strip(),
                 url=main.find("a")["href"],
             )

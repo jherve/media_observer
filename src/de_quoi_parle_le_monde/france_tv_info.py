@@ -20,7 +20,7 @@ class FranceTvInfoMainPage(MainPage):
         all_articles = soup.find_all("article", class_="card-article-most-read")
         return [
             TopArticle(
-                article=FranceTvInfoFeaturedArticle(
+                article=FranceTvInfoFeaturedArticle.create(
                     title=a.find(
                         "p", class_="card-article-most-read__title"
                     ).text.strip(),
@@ -41,7 +41,7 @@ class FranceTvInfoMainPage(MainPage):
         )
 
         return MainArticle(
-            article=FranceTvInfoFeaturedArticle(
+            article=FranceTvInfoFeaturedArticle.create(
                 title=title.text.strip(),
                 url=main.find("a")["href"],
             )
