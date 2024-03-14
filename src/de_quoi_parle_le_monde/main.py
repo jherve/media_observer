@@ -69,8 +69,7 @@ async def main(dler: ArchiveDownloader):
                 ArchiveDownloader.handle_snap(ia, c, storage, d)
                 for d in dts
                 for c in media_collection.values()
-            ],
-            return_exceptions=True,
+            ]
         )
 
 
