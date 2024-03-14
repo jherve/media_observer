@@ -2,7 +2,7 @@ import aiosqlite
 import asyncio
 from datetime import datetime
 
-from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticleSnapshot
+from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticleSnapshot, FeaturedArticle
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
@@ -76,6 +76,21 @@ class Storage:
                 """
                 CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site_id
                 ON snapshots (timestamp_virtual, site_id);
+                """
+            )
+
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS featured_articles (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    url TEXT
+                );
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_url
+                ON featured_articles (url);
                 """
             )
 
@@ -212,6 +227,26 @@ class Storage:
                     WHERE timestamp_virtual = ? AND site_id = ?
                     """,
                     [virtual, site_id],
+                )
+
+            await conn.commit()
+            return id_
+
+    async def add_featured_article(self, article: FeaturedArticle):
+        async with self.conn as conn:
+            (id_,) = await conn.execute_insert(
+                self._insert_stmt("featured_articles", ["url"]),
+                [str(article.url)],
+            )
+
+            if id_ == 0:
+                [(id_,)] = await conn.execute_fetchall(
+                    """
+                    SELECT id
+                    FROM featured_articles
+                    WHERE url = ?
+                    """,
+                    [str(article.url)],
                 )
 
             await conn.commit()
