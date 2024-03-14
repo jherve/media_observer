@@ -221,7 +221,7 @@ class Storage:
         async with self.conn as conn:
             (id_,) = await conn.execute_insert(
                 self._insert_stmt("featured_article_snapshots", ["title", "url", "original_url"]),
-                [article.title, article.url, str(article.original)],
+                [article.title, article.url, str(article.original.url)],
             )
 
             if id_ == 0:

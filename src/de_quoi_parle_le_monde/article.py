@@ -11,23 +11,26 @@ cattrs.register_structure_hook(URL, lambda v, _: URL(v))
 
 
 @frozen
+class FeaturedArticle:
+    url: URL
+
+    @classmethod
+    def from_internet_archive_url(cls, url_str: str) -> "FeaturedArticle":
+        url = URL(url_str)
+        original_str = url.path.split("/", 3)[-1]
+        return cattrs.structure({"url": original_str}, cls)
+
+
+@frozen
 class FeaturedArticleSnapshot(ABC):
     title: str
     url: str
-    original: URL
-
-    @staticmethod
-    def to_original_url(url: str) -> URL:
-        url = URL(url)
-        original_str = url.path.split("/", 3)[-1]
-        original = URL(original_str)
-        assert original.is_absolute(), f"{original}"
-        return original
+    original: FeaturedArticle
 
     @classmethod
     def create(cls, title, url):
-        attrs = dict(title=title, url=url, original=cls.to_original_url(url))
-        return cattrs.structure(attrs, cls)
+        attrs = dict(title=title, url=url, original=FeaturedArticle.from_internet_archive_url(url))
+        return cls(**attrs)
 
 
 @frozen
