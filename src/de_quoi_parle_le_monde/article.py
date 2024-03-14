@@ -29,7 +29,11 @@ class FeaturedArticleSnapshot(ABC):
 
     @classmethod
     def create(cls, title, url):
-        attrs = dict(title=title, url=url, original=FeaturedArticle.from_internet_archive_url(url))
+        attrs = dict(
+            title=title,
+            url=url,
+            original=FeaturedArticle.from_internet_archive_url(url),
+        )
         return cls(**attrs)
 
 

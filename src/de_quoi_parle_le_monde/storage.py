@@ -2,7 +2,11 @@ import aiosqlite
 import asyncio
 from datetime import datetime
 
-from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticleSnapshot, FeaturedArticle
+from de_quoi_parle_le_monde.article import (
+    TopArticle,
+    FeaturedArticleSnapshot,
+    FeaturedArticle,
+)
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
@@ -252,10 +256,15 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_featured_article_snapshot(self, featured_article_id: int, article: FeaturedArticleSnapshot):
+    async def add_featured_article_snapshot(
+        self, featured_article_id: int, article: FeaturedArticleSnapshot
+    ):
         async with self.conn as conn:
             (id_,) = await conn.execute_insert(
-                self._insert_stmt("featured_article_snapshots", ["title", "url", "featured_article_id"]),
+                self._insert_stmt(
+                    "featured_article_snapshots",
+                    ["title", "url", "featured_article_id"],
+                ),
                 [article.title, article.url, featured_article_id],
             )
 
@@ -288,7 +297,8 @@ class Storage:
         async with self.conn as conn:
             await conn.execute_insert(
                 self._insert_stmt(
-                    "top_articles", ["snapshot_id", "featured_article_snapshot_id", "rank"]
+                    "top_articles",
+                    ["snapshot_id", "featured_article_snapshot_id", "rank"],
                 ),
                 [snapshot_id, article_id, article.rank],
             )
