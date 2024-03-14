@@ -7,7 +7,7 @@ from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 
 
 @frozen
-class FeaturedArticle(ABC):
+class FeaturedArticleSnapshot(ABC):
     title: str
     url: str
     original: URL
@@ -27,13 +27,13 @@ class FeaturedArticle(ABC):
 
 @frozen
 class TopArticle(ABC):
-    article: FeaturedArticle
+    article: FeaturedArticleSnapshot
     rank: int
 
 
 @frozen
 class MainArticle(ABC):
-    article: FeaturedArticle
+    article: FeaturedArticleSnapshot
 
 
 @frozen

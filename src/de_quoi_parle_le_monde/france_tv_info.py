@@ -3,14 +3,14 @@ from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 from de_quoi_parle_le_monde.article import (
-    FeaturedArticle,
+    FeaturedArticleSnapshot,
     TopArticle,
     MainArticle,
     MainPage,
 )
 
 
-class FranceTvInfoFeaturedArticle(FeaturedArticle):
+class FranceTvInfoFeaturedArticleSnapshot(FeaturedArticleSnapshot):
     ...
 
 
@@ -20,7 +20,7 @@ class FranceTvInfoMainPage(MainPage):
         all_articles = soup.find_all("article", class_="card-article-most-read")
         return [
             TopArticle(
-                article=FranceTvInfoFeaturedArticle.create(
+                article=FranceTvInfoFeaturedArticleSnapshot.create(
                     title=a.find(
                         "p", class_="card-article-most-read__title"
                     ).text.strip(),
@@ -41,7 +41,7 @@ class FranceTvInfoMainPage(MainPage):
         )
 
         return MainArticle(
-            article=FranceTvInfoFeaturedArticle.create(
+            article=FranceTvInfoFeaturedArticleSnapshot.create(
                 title=title.text.strip(),
                 url=main.find("a")["href"],
             )

@@ -2,7 +2,7 @@ import aiosqlite
 import asyncio
 from datetime import datetime
 
-from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticle
+from de_quoi_parle_le_monde.article import MainArticle, TopArticle, FeaturedArticleSnapshot
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
@@ -81,7 +81,7 @@ class Storage:
 
             await conn.execute(
                 """
-                CREATE TABLE IF NOT EXISTS featured_articles (
+                CREATE TABLE IF NOT EXISTS featured_article_snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT,
                     url TEXT,
@@ -91,8 +91,8 @@ class Storage:
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_idx_title_url
-                ON featured_articles (title, url);
+                CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_title_url
+                ON featured_article_snapshots (title, url);
                 """
             )
 
@@ -101,7 +101,7 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS main_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE
+                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE
                 );
                 """
             )
@@ -116,7 +116,7 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS top_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE,
+                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
                     rank INTEGER
                 );
                 """
@@ -134,11 +134,11 @@ class Storage:
                     SELECT
                         si.id AS site_id,
                         s.id AS snapshot_id,
-                        fa.id AS featured_article_id,
+                        fas.id AS featured_article_snapshot_id,
                         si.original_url AS original_url,
                         s.timestamp_virtual,
-                        fa.title,
-                        fa.url
+                        fas.title,
+                        fas.url
                     FROM
                         main_articles as m
                     JOIN
@@ -146,7 +146,7 @@ class Storage:
                     JOIN
                         sites AS si ON si.id = s.site_id
                     JOIN
-                        featured_articles AS fa ON m.featured_article_id = fa.id
+                        featured_article_snapshots AS fas ON m.featured_article_snapshot_id = fas.id
                 """
             )
 
@@ -156,11 +156,11 @@ class Storage:
                     SELECT
                         si.id AS site_id,
                         s.id AS snapshot_id,
-                        fa.id AS featured_article_id,
+                        fas.id AS featured_article_snapshot_id,
                         si.original_url AS original_url,
                         s.timestamp_virtual,
-                        fa.title,
-                        fa.url,
+                        fas.title,
+                        fas.url,
                         t.rank
                     FROM
                         top_articles as t
@@ -169,7 +169,7 @@ class Storage:
                     JOIN
                         sites AS si ON si.id = s.site_id
                     JOIN
-                        featured_articles AS fa ON t.featured_article_id = fa.id
+                        featured_article_snapshots AS fas ON t.featured_article_snapshot_id = fas.id
                 """
             )
 
@@ -217,10 +217,10 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_featured_article(self, article: FeaturedArticle):
+    async def add_featured_article_snapshot(self, article: FeaturedArticleSnapshot):
         async with self.conn as conn:
             (id_,) = await conn.execute_insert(
-                self._insert_stmt("featured_articles", ["title", "url", "original_url"]),
+                self._insert_stmt("featured_article_snapshots", ["title", "url", "original_url"]),
                 [article.title, article.url, str(article.original)],
             )
 
@@ -228,7 +228,7 @@ class Storage:
                 [(id_,)] = await conn.execute_fetchall(
                     """
                     SELECT id
-                    FROM featured_articles
+                    FROM featured_article_snapshots
                     WHERE title = ? AND url = ?
                     """,
                     [article.title, article.url],
@@ -241,7 +241,7 @@ class Storage:
         async with self.conn as conn:
             await conn.execute_insert(
                 self._insert_stmt(
-                    "main_articles", ["snapshot_id", "featured_article_id"]
+                    "main_articles", ["snapshot_id", "featured_article_snapshot_id"]
                 ),
                 [snapshot_id, article_id],
             )
@@ -253,7 +253,7 @@ class Storage:
         async with self.conn as conn:
             await conn.execute_insert(
                 self._insert_stmt(
-                    "top_articles", ["snapshot_id", "featured_article_id", "rank"]
+                    "top_articles", ["snapshot_id", "featured_article_snapshot_id", "rank"]
                 ),
                 [snapshot_id, article_id, article.rank],
             )

@@ -3,14 +3,14 @@ from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 from de_quoi_parle_le_monde.article import (
-    FeaturedArticle,
+    FeaturedArticleSnapshot,
     TopArticle,
     MainArticle,
     MainPage,
 )
 
 
-class LeMondeFeaturedArticle(FeaturedArticle):
+class LeMondeFeaturedArticleSnapshot(FeaturedArticleSnapshot):
     ...
 
 
@@ -20,7 +20,7 @@ class LeMondeMainPage(MainPage):
         all_articles = soup.find_all("div", class_="top-article")
         return [
             TopArticle(
-                article=LeMondeFeaturedArticle.create(
+                article=LeMondeFeaturedArticleSnapshot.create(
                     title=a.text.strip(), url=a.find("a")["href"]
                 ),
                 rank=idx + 1,
@@ -32,7 +32,7 @@ class LeMondeMainPage(MainPage):
     def get_main_article(soup):
         main = soup.find("div", class_="article--main")
         return MainArticle(
-            article=LeMondeFeaturedArticle.create(
+            article=LeMondeFeaturedArticleSnapshot.create(
                 title=main.find("p", class_="article__title-label").text.strip(),
                 url=main.find("a")["href"],
             )
