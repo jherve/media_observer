@@ -1,9 +1,13 @@
 from abc import ABC, abstractmethod
 from attrs import frozen
+import cattrs
 from bs4 import BeautifulSoup
 from yarl import URL
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
+
+
+cattrs.register_structure_hook(URL, lambda v, _: URL(v))
 
 
 @frozen
@@ -22,7 +26,8 @@ class FeaturedArticleSnapshot(ABC):
 
     @classmethod
     def create(cls, title, url):
-        return cls(title, url, cls.to_original_url(url))
+        attrs = dict(title=title, url=url, original=cls.to_original_url(url))
+        return cattrs.structure(attrs, cls)
 
 
 @frozen
