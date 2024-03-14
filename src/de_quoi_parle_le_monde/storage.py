@@ -84,7 +84,8 @@ class Storage:
                 CREATE TABLE IF NOT EXISTS featured_articles (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     title TEXT,
-                    url TEXT
+                    url TEXT,
+                    original_url TEXT
                 );
                 """
             )
@@ -219,8 +220,8 @@ class Storage:
     async def add_featured_article(self, article: FeaturedArticle):
         async with self.conn as conn:
             (id_,) = await conn.execute_insert(
-                self._insert_stmt("featured_articles", ["title", "url"]),
-                [article.title, article.url],
+                self._insert_stmt("featured_articles", ["title", "url", "original_url"]),
+                [article.title, article.url, str(article.original)],
             )
 
             if id_ == 0:
