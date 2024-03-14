@@ -98,16 +98,16 @@ class Storage:
                 """
                 CREATE TABLE IF NOT EXISTS featured_article_snapshots (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE,
                     title TEXT,
-                    url TEXT,
-                    original_url TEXT
+                    url TEXT
                 );
                 """
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_title_url
-                ON featured_article_snapshots (title, url);
+                CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_featured_article_id_url
+                ON featured_article_snapshots (featured_article_id, url);
                 """
             )
 
@@ -252,11 +252,11 @@ class Storage:
             await conn.commit()
             return id_
 
-    async def add_featured_article_snapshot(self, article: FeaturedArticleSnapshot):
+    async def add_featured_article_snapshot(self, featured_article_id: int, article: FeaturedArticleSnapshot):
         async with self.conn as conn:
             (id_,) = await conn.execute_insert(
-                self._insert_stmt("featured_article_snapshots", ["title", "url", "original_url"]),
-                [article.title, article.url, str(article.original.url)],
+                self._insert_stmt("featured_article_snapshots", ["title", "url", "featured_article_id"]),
+                [article.title, article.url, featured_article_id],
             )
 
             if id_ == 0:
@@ -264,9 +264,9 @@ class Storage:
                     """
                     SELECT id
                     FROM featured_article_snapshots
-                    WHERE title = ? AND url = ?
+                    WHERE featured_article_id = ? AND url = ?
                     """,
-                    [article.title, article.url],
+                    [featured_article_id, article.url],
                 )
 
             await conn.commit()

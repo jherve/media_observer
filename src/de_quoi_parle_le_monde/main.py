@@ -41,12 +41,14 @@ class ArchiveDownloader:
         site_id = await storage.add_site(collection.url)
         snapshot_id = await storage.add_snapshot(site_id, main_page.snapshot.id, dt)
 
-        main_id = await storage.add_featured_article_snapshot(main_page.main_article.article)
-        await storage.add_main_article(snapshot_id, main_id)
+        article_id = await storage.add_featured_article(main_page.main_article.article.original)
+        main_article_snap_id = await storage.add_featured_article_snapshot(article_id, main_page.main_article.article)
+        await storage.add_main_article(snapshot_id, main_article_snap_id)
 
         for t in main_page.top_articles:
-            article_id = await storage.add_featured_article_snapshot(t.article)
-            await storage.add_top_article(snapshot_id, article_id, t)
+            article_id = await storage.add_featured_article(t.article.original)
+            top_article_snap_id = await storage.add_featured_article_snapshot(article_id, t.article)
+            await storage.add_top_article(snapshot_id, top_article_snap_id, t)
 
 
 async def main(dler: ArchiveDownloader):
