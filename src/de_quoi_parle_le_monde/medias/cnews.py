@@ -30,7 +30,7 @@ class CNewsMainPage(MainPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select("div.dm-block-news_1_single_full")[0]
+        main = soup.select("div.dm-block")[0]
         [url] = main.select("a")
 
         return MainArticle(
