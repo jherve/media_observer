@@ -16,10 +16,11 @@ class ArchiveDownloader:
     client: HttpClient
 
     @staticmethod
-    def last_n_days(n):
+    def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
         return [
-            datetime.combine(date.today() - timedelta(days=i), time(hour=18))
+            datetime.combine(date.today() - timedelta(days=i), time(hour=h))
             for i in range(1, n)
+            for h in hours
         ]
 
     @staticmethod
@@ -59,7 +60,7 @@ class ArchiveDownloader:
 
 async def main(dler: ArchiveDownloader):
     storage = await Storage.create()
-    dts = ArchiveDownloader.last_n_days(10)
+    dts = ArchiveDownloader.last_n_days_at_hours(10, [18])
 
     async with dler.client.session() as session:
         ia = InternetArchiveClient(session)
