@@ -14,8 +14,6 @@ from de_quoi_parle_le_monde.storage import Storage
 
 @frozen
 class ArchiveDownloader:
-    client: HttpClient
-
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
         return [
@@ -86,12 +84,14 @@ class ArchiveDownloader:
             return
 
 
-async def main(dler: ArchiveDownloader):
+async def main():
+    http_client = HttpClient()
     storage = await Storage.create()
     dts = ArchiveDownloader.last_n_days_at_hours(10, [18])
 
-    async with dler.client.session() as session:
+    async with http_client.session() as session:
         ia = InternetArchiveClient(session)
+        dler = ArchiveDownloader()
 
         return await asyncio.gather(
             *[
@@ -102,7 +102,4 @@ async def main(dler: ArchiveDownloader):
         )
 
 
-http_client = HttpClient()
-dler = ArchiveDownloader(http_client)
-
-asyncio.run(main(dler))
+asyncio.run(main())
