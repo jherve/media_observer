@@ -14,6 +14,9 @@ from de_quoi_parle_le_monde.storage import Storage
 
 @frozen
 class ArchiveDownloader:
+    storage: Storage
+    ia_client: InternetArchiveClient
+
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
         return [
@@ -22,38 +25,34 @@ class ArchiveDownloader:
             for h in hours
         ]
 
-    @staticmethod
-    async def find(ia, collection, dt):
-        return await ia.get_snapshot_id_closest_to(collection.url, dt)
+    async def find(self, collection, dt):
+        return await self.ia_client.get_snapshot_id_closest_to(collection.url, dt)
 
-    @staticmethod
-    async def parse(collection, snapshot):
+    async def parse(self, collection, snapshot):
         return await collection.MainPageClass.from_snapshot(snapshot)
 
-    @staticmethod
-    async def store(page, collection, storage, dt):
-        site_id = await storage.add_site(collection.url)
-        snapshot_id = await storage.add_snapshot(site_id, page.snapshot.id, dt)
+    async def store(self, page, collection, dt):
+        site_id = await self.storage.add_site(collection.url)
+        snapshot_id = await self.storage.add_snapshot(site_id, page.snapshot.id, dt)
 
-        article_id = await storage.add_featured_article(
+        article_id = await self.storage.add_featured_article(
             page.main_article.article.original
         )
-        main_article_snap_id = await storage.add_featured_article_snapshot(
+        main_article_snap_id = await self.storage.add_featured_article_snapshot(
             article_id, page.main_article.article
         )
-        await storage.add_main_article(snapshot_id, main_article_snap_id)
+        await self.storage.add_main_article(snapshot_id, main_article_snap_id)
 
         for t in page.top_articles:
-            article_id = await storage.add_featured_article(t.article.original)
-            top_article_snap_id = await storage.add_featured_article_snapshot(
+            article_id = await self.storage.add_featured_article(t.article.original)
+            top_article_snap_id = await self.storage.add_featured_article_snapshot(
                 article_id, t.article
             )
-            await storage.add_top_article(snapshot_id, top_article_snap_id, t)
+            await self.storage.add_top_article(snapshot_id, top_article_snap_id, t)
 
-    @classmethod
-    async def handle_snap(cls, ia, collection, storage, dt):
+    async def handle_snap(self, collection, dt):
         try:
-            id_closest = await cls.find(ia, collection, dt)
+            id_closest = await self.find(collection, dt)
         except SnapshotNotYetAvailable as e:
             print(f"Snapshot for {collection.url} @ {dt} not yet available")
             return
@@ -63,21 +62,21 @@ class ArchiveDownloader:
             return
 
         try:
-            closest = await ia.fetch(id_closest)
+            closest = await self.ia_client.fetch(id_closest)
         except Exception as e:
             print(f"Error while fetching {id_closest} from {collection} @ {dt}")
             traceback.print_exception(e)
             return
 
         try:
-            main_page = await cls.parse(collection, closest)
+            main_page = await self.parse(collection, closest)
         except Exception as e:
             print(f"Error while parsing {closest} from {collection} @ {dt}")
             traceback.print_exception(e)
             return
 
         try:
-            await cls.store(main_page, collection, storage, dt)
+            await self.store(main_page, collection, dt)
         except Exception as e:
             print(f"Error while attempting to store {main_page} from {collection} @ {dt}")
             traceback.print_exception(e)
@@ -91,11 +90,11 @@ async def main():
 
     async with http_client.session() as session:
         ia = InternetArchiveClient(session)
-        dler = ArchiveDownloader()
+        dler = ArchiveDownloader(storage, ia)
 
         return await asyncio.gather(
             *[
-                ArchiveDownloader.handle_snap(ia, c, storage, d)
+                dler.handle_snap(c, d)
                 for d in dts
                 for c in media_collection.values()
             ]
