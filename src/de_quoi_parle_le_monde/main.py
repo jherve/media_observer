@@ -59,17 +59,31 @@ class ArchiveDownloader:
         except SnapshotNotYetAvailable as e:
             print(f"Snapshot for {collection.url} @ {dt} not yet available")
             return
+        except Exception as e:
+            print(f"Error while trying to find snapshot for {collection.url} @ {dt}")
+            traceback.print_exception(e)
+            return
 
-        closest = await ia.fetch(id_closest)
+        try:
+            closest = await ia.fetch(id_closest)
+        except Exception as e:
+            print(f"Error while fetching {id_closest} from {collection} @ {dt}")
+            traceback.print_exception(e)
+            return
 
         try:
             main_page = await cls.parse(collection, closest)
         except Exception as e:
-            print(f"Error while processing {closest} from {collection} @ {dt}")
+            print(f"Error while parsing {closest} from {collection} @ {dt}")
             traceback.print_exception(e)
             return
 
-        await cls.store(main_page, collection, storage, dt)
+        try:
+            await cls.store(main_page, collection, storage, dt)
+        except Exception as e:
+            print(f"Error while attempting to store {main_page} from {collection} @ {dt}")
+            traceback.print_exception(e)
+            return
 
 
 async def main(dler: ArchiveDownloader):
