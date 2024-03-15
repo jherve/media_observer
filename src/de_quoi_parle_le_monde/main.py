@@ -24,38 +24,50 @@ class ArchiveDownloader:
         ]
 
     @staticmethod
-    async def handle_snap(ia, collection, storage, dt):
+    async def find(ia, collection, dt):
         try:
-            id_closest = await ia.get_snapshot_id_closest_to(collection.url, dt)
+            return await ia.get_snapshot_id_closest_to(collection.url, dt)
         except SnapshotNotYetAvailable as e:
             print(f"Snapshot for {collection.url} @ {dt} not yet available")
-            raise e
+            return None
 
-        closest = await ia.fetch(id_closest)
-
+    @staticmethod
+    async def parse(collection, snapshot):
         try:
-            main_page = await collection.MainPageClass.from_snapshot(closest)
+            return await collection.MainPageClass.from_snapshot(snapshot)
         except AttributeError as e:
             print(f"error while processing {id_closest}")
             raise e
 
+    @staticmethod
+    async def store(page, collection, storage, dt):
         site_id = await storage.add_site(collection.url)
-        snapshot_id = await storage.add_snapshot(site_id, main_page.snapshot.id, dt)
+        snapshot_id = await storage.add_snapshot(site_id, page.snapshot.id, dt)
 
         article_id = await storage.add_featured_article(
-            main_page.main_article.article.original
+            page.main_article.article.original
         )
         main_article_snap_id = await storage.add_featured_article_snapshot(
-            article_id, main_page.main_article.article
+            article_id, page.main_article.article
         )
         await storage.add_main_article(snapshot_id, main_article_snap_id)
 
-        for t in main_page.top_articles:
+        for t in page.top_articles:
             article_id = await storage.add_featured_article(t.article.original)
             top_article_snap_id = await storage.add_featured_article_snapshot(
                 article_id, t.article
             )
             await storage.add_top_article(snapshot_id, top_article_snap_id, t)
+
+    @classmethod
+    async def handle_snap(cls, ia, collection, storage, dt):
+        id_closest = await cls.find(ia, collection, dt)
+        if id_closest is None:
+            return
+
+        closest = await ia.fetch(id_closest)
+        main_page = await cls.parse(collection, closest)
+        await cls.store(main_page, collection, storage, dt)
 
 
 async def main(dler: ArchiveDownloader):
