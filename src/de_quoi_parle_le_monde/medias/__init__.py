@@ -12,7 +12,5 @@ media_collection = {
     "le_monde": ArchiveCollection(
         url="https://lemonde.fr", MainPageClass=LeMondeMainPage
     ),
-    "cnews": ArchiveCollection(
-        url="https://cnews.fr", MainPageClass=CNewsMainPage
-    ),
+    "cnews": ArchiveCollection(url="https://cnews.fr", MainPageClass=CNewsMainPage),
 }

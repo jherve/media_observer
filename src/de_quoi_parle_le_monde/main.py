@@ -59,7 +59,7 @@ class ArchiveDownloader:
 
 async def main(dler: ArchiveDownloader):
     storage = await Storage.create()
-    dts = ArchiveDownloader.last_n_days(20)
+    dts = ArchiveDownloader.last_n_days(10)
 
     async with dler.client.session() as session:
         ia = InternetArchiveClient(session)
