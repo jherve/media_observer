@@ -80,3 +80,8 @@ class MainPage(ABC):
 class ArchiveCollection:
     url: str
     MainPageClass: type[MainPage]
+
+
+def to_text(soup: BeautifulSoup, selector: str) -> str:
+    [text_element] = soup.select(selector)
+    return text_element.text.strip()

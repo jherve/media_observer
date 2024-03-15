@@ -7,6 +7,7 @@ from de_quoi_parle_le_monde.article import (
     TopArticle,
     MainArticle,
     MainPage,
+    to_text,
 )
 
 
@@ -16,13 +17,13 @@ class CNewsFeaturedArticleSnapshot(FeaturedArticleSnapshot):
 
 class CNewsMainPage(MainPage):
     @staticmethod
-    def get_top_articles(soup):
-        all_articles = soup.css.select(".top-news-content a")
+    def get_top_articles(soup: BeautifulSoup):
+        all_articles = soup.select(".top-news-content a")
 
         return [
             TopArticle(
                 article=CNewsFeaturedArticleSnapshot.create(
-                    title=a.find("h3", class_="dm-letop-title").text.strip(), url=a["href"]
+                    title=to_text(a, "h3.dm-letop-title"), url=a["href"]
                 ),
                 rank=idx + 1,
             )
@@ -31,10 +32,12 @@ class CNewsMainPage(MainPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.find("div", class_="dm-block-news_1_single_full")
+        main = soup.select("div.dm-block-news_1_single_full")[0]
+        [url] = main.select("a")
+
         return MainArticle(
             article=CNewsFeaturedArticleSnapshot.create(
-                title=main.find("h2", class_="dm-news-title").text.strip(),
-                url=main.find("a")["href"],
+                title=to_text(main, "h2.dm-news-title"),
+                url=url["href"],
             )
         )

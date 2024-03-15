@@ -7,6 +7,7 @@ from de_quoi_parle_le_monde.article import (
     TopArticle,
     MainArticle,
     MainPage,
+    to_text,
 )
 
 
@@ -17,7 +18,7 @@ class LeMondeFeaturedArticleSnapshot(FeaturedArticleSnapshot):
 class LeMondeMainPage(MainPage):
     @staticmethod
     def get_top_articles(soup):
-        all_articles = soup.find_all("div", class_="top-article")
+        all_articles = soup.select("div.top-article")
         return [
             TopArticle(
                 article=LeMondeFeaturedArticleSnapshot.create(
@@ -30,10 +31,14 @@ class LeMondeMainPage(MainPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.find("div", class_="article--main")
+        def to_href(soup):
+            link = soup.select("a")[0]
+            return link["href"]
+
+        [main] = soup.select("div.article--main")
         return MainArticle(
             article=LeMondeFeaturedArticleSnapshot.create(
-                title=main.find("p", class_="article__title-label").text.strip(),
-                url=main.find("a")["href"],
+                title=to_text(main, "p.article__title-label"),
+                url=to_href(main),
             )
         )
