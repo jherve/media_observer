@@ -1,3 +1,4 @@
+import asyncio
 from abc import ABC, abstractmethod
 from attrs import frozen
 import cattrs
@@ -55,10 +56,24 @@ class MainPage(ABC):
     top_articles: list[TopArticle]
     main_article: MainArticle
 
-    @classmethod
+    @staticmethod
     @abstractmethod
-    async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
+    def get_top_articles(soup: BeautifulSoup) -> list[TopArticle]:
         ...
+
+    @staticmethod
+    @abstractmethod
+    def get_main_article(soup: BeautifulSoup) -> MainArticle:
+        ...
+
+    @classmethod
+    async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
+        loop = asyncio.get_event_loop()
+        soup = await loop.run_in_executor(None, BeautifulSoup, snapshot.text, "lxml")
+
+        return cls(
+            snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
+        )
 
 
 @frozen

@@ -46,13 +46,3 @@ class FranceTvInfoMainPage(MainPage):
                 url=main.find("a")["href"],
             )
         )
-
-    @classmethod
-    async def from_snapshot(
-        cls, snapshot: InternetArchiveSnapshot
-    ) -> "FranceTvInfoMainPage":
-        loop = asyncio.get_event_loop()
-        soup = await loop.run_in_executor(None, BeautifulSoup, snapshot.text, "lxml")
-        return FranceTvInfoMainPage(
-            snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
-        )
