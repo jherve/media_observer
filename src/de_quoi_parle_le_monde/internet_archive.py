@@ -1,4 +1,4 @@
-from attrs import frozen
+from attrs import frozen, field
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
 import cattrs
@@ -90,7 +90,7 @@ class InternetArchiveSnapshotId:
 @frozen
 class InternetArchiveSnapshot:
     id: InternetArchiveSnapshotId
-    text: str
+    text: str = field(repr=False)
 
 
 @frozen

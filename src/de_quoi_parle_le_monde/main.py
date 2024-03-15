@@ -1,6 +1,7 @@
 from datetime import date, datetime, time, timedelta
 import asyncio
 from attrs import frozen
+import traceback
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import (
@@ -19,25 +20,17 @@ class ArchiveDownloader:
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
         return [
             datetime.combine(date.today() - timedelta(days=i), time(hour=h))
-            for i in range(1, n)
+            for i in range(0, n)
             for h in hours
         ]
 
     @staticmethod
     async def find(ia, collection, dt):
-        try:
-            return await ia.get_snapshot_id_closest_to(collection.url, dt)
-        except SnapshotNotYetAvailable as e:
-            print(f"Snapshot for {collection.url} @ {dt} not yet available")
-            return None
+        return await ia.get_snapshot_id_closest_to(collection.url, dt)
 
     @staticmethod
     async def parse(collection, snapshot):
-        try:
-            return await collection.MainPageClass.from_snapshot(snapshot)
-        except AttributeError as e:
-            print(f"error while processing {id_closest}")
-            raise e
+        return await collection.MainPageClass.from_snapshot(snapshot)
 
     @staticmethod
     async def store(page, collection, storage, dt):
@@ -61,12 +54,21 @@ class ArchiveDownloader:
 
     @classmethod
     async def handle_snap(cls, ia, collection, storage, dt):
-        id_closest = await cls.find(ia, collection, dt)
-        if id_closest is None:
+        try:
+            id_closest = await cls.find(ia, collection, dt)
+        except SnapshotNotYetAvailable as e:
+            print(f"Snapshot for {collection.url} @ {dt} not yet available")
             return
 
         closest = await ia.fetch(id_closest)
-        main_page = await cls.parse(collection, closest)
+
+        try:
+            main_page = await cls.parse(collection, closest)
+        except Exception as e:
+            print(f"Error while processing {closest} from {collection} @ {dt}")
+            traceback.print_exception(e)
+            return
+
         await cls.store(main_page, collection, storage, dt)
 
 
