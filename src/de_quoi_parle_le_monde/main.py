@@ -2,6 +2,7 @@ from datetime import date, datetime, time, timedelta
 import asyncio
 from attrs import frozen
 import traceback
+from loguru import logger
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import (
@@ -29,10 +30,10 @@ class ArchiveDownloader:
         try:
             return await self.ia_client.get_snapshot_id_closest_to(collection.url, dt)
         except SnapshotNotYetAvailable as e:
-            print(f"Snapshot for {collection.url} @ {dt} not yet available")
+            logger.warning(f"Snapshot for {collection.url} @ {dt} not yet available")
             raise e
         except Exception as e:
-            print(f"Error while trying to find snapshot for {collection.url} @ {dt}")
+            logger.error(f"Error while trying to find snapshot for {collection.url} @ {dt}")
             traceback.print_exception(e)
             raise e
 
@@ -40,7 +41,7 @@ class ArchiveDownloader:
         try:
             return await self.ia_client.fetch(snap_id)
         except Exception as e:
-            print(f"Error while fetching {snap_id}")
+            logger.error(f"Error while fetching {snap_id}")
             traceback.print_exception(e)
             raise e
 
@@ -48,7 +49,7 @@ class ArchiveDownloader:
         try:
             return await collection.MainPageClass.from_snapshot(snapshot)
         except Exception as e:
-            print(f"Error while parsing {snapshot}")
+            logger.error(f"Error while parsing {snapshot}")
             traceback.print_exception(e)
             raise e
 
@@ -73,7 +74,7 @@ class ArchiveDownloader:
                 await self.storage.add_top_article(snapshot_id, top_article_snap_id, t)
 
         except Exception as e:
-            print(f"Error while attempting to store {page} from {collection} @ {dt}")
+            logger.error(f"Error while attempting to store {page} from {collection} @ {dt}")
             traceback.print_exception(e)
             raise e
 
