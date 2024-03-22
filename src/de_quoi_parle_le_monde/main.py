@@ -33,7 +33,9 @@ class ArchiveDownloader:
             logger.warning(f"Snapshot for {collection.url} @ {dt} not yet available")
             raise e
         except Exception as e:
-            logger.error(f"Error while trying to find snapshot for {collection.url} @ {dt}")
+            logger.error(
+                f"Error while trying to find snapshot for {collection.url} @ {dt}"
+            )
             traceback.print_exception(e)
             raise e
 
@@ -74,7 +76,9 @@ class ArchiveDownloader:
                 await self.storage.add_top_article(snapshot_id, top_article_snap_id, t)
 
         except Exception as e:
-            logger.error(f"Error while attempting to store {page} from {collection} @ {dt}")
+            logger.error(
+                f"Error while attempting to store {page} from {collection} @ {dt}"
+            )
             traceback.print_exception(e)
             raise e
 
@@ -98,11 +102,7 @@ async def main():
         dler = ArchiveDownloader(storage, ia)
 
         return await asyncio.gather(
-            *[
-                dler.handle_snap(c, d)
-                for d in dts
-                for c in media_collection.values()
-            ]
+            *[dler.handle_snap(c, d) for d in dts for c in media_collection.values()]
         )
 
 
