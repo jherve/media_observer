@@ -48,7 +48,7 @@ class ArchiveDownloader:
         try:
             return await collection.MainPageClass.from_snapshot(snapshot)
         except Exception as e:
-            print(f"Error while parsing {closest}")
+            print(f"Error while parsing {snapshot}")
             traceback.print_exception(e)
             raise e
 
@@ -73,7 +73,7 @@ class ArchiveDownloader:
                 await self.storage.add_top_article(snapshot_id, top_article_snap_id, t)
 
         except Exception as e:
-            print(f"Error while attempting to store {main_page} from {collection} @ {dt}")
+            print(f"Error while attempting to store {page} from {collection} @ {dt}")
             traceback.print_exception(e)
             raise e
 
