@@ -6,5 +6,11 @@
 <body>
     <a href="{{ url_for('admin_index') }}">Admin page</a>
     <h1>Hello World !</h1>
+
+    <ul>
+        {% for s in sites %}
+            <li><a href="{{ url_for('site_main_article', id=s['id']) }}">{{ s["original_url"] }}</a></li>
+        {% endfor %}
+    </ul>
 </body>
 </html>
