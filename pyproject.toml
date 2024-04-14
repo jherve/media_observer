@@ -19,6 +19,8 @@ dependencies = [
     "yarl>=1.9.4",
     "loguru>=0.7.2",
     "sentence-transformers>=2.6.1",
+    "hypercorn>=0.16.0",
+    "fastapi>=0.110.1",
 ]
 requires-python = "==3.11.*"
 readme = "README.md"
