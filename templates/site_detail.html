@@ -1,0 +1,15 @@
+<html>
+<head>
+    <title>Hello</title>
+    <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <a href="{{ url_for('index') }}">Homepage</a>
+    <h1>Site {{ site_id }}</h1>
+
+    {% for a in main_articles %}
+        <h2>{{ a["title"] }}</h2>
+        <p>{{ a["timestamp_virtual"] }}</p>
+    {% endfor %}
+</body>
+</html>

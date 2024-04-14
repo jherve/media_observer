@@ -327,6 +327,28 @@ class Storage:
             )
             await conn.commit()
 
+    async def list_main_articles(self, site_id: int, limit: int = 5):
+        async with self.conn as conn:
+            main_articles = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM main_articles_view
+                    WHERE site_id = ?
+                    ORDER BY timestamp_virtual DESC
+                    LIMIT ?
+                """,
+                [site_id, limit]
+            )
+
+            return [{
+                "snapshot_id": a[1],
+                "featured_article_snapshot_id": a[2],
+                "original_url": a[3],
+                "timestamp_virtual": a[4],
+                "title": a[5],
+                "url": a[6]
+            } for a in main_articles]
+
     async def select_from(self, table):
         async with self.conn as conn:
             return await conn.execute_fetchall(
