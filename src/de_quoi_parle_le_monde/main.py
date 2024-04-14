@@ -92,10 +92,8 @@ class ArchiveDownloader:
             return
 
 
-async def main():
-    http_client = HttpClient()
-    storage = await Storage.create()
-    dts = ArchiveDownloader.last_n_days_at_hours(10, [18])
+async def download_all(http_client: HttpClient, storage: Storage, n_days: int, hours: list[int]):
+    dts = ArchiveDownloader.last_n_days_at_hours(n_days, hours)
 
     async with http_client.session() as session:
         ia = InternetArchiveClient(session)
@@ -104,6 +102,13 @@ async def main():
         return await asyncio.gather(
             *[dler.handle_snap(c, d) for d in dts for c in media_collection.values()]
         )
+
+
+async def main():
+    http_client = HttpClient()
+    storage = await Storage.create()
+
+    await download_all(http_client, storage, 10, [18])
 
 
 asyncio.run(main())
