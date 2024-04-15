@@ -194,6 +194,22 @@ class Storage:
                 """
             )
 
+            await conn.execute(
+                """
+                CREATE TABLE IF NOT EXISTS articles_embeddings (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
+                    title_embedding BLOB
+                );
+                """
+            )
+            await conn.execute(
+                """
+                CREATE UNIQUE INDEX IF NOT EXISTS articles_embeddings_unique_idx_featured_article_snapshot_id
+                ON articles_embeddings (featured_article_snapshot_id);
+            """
+            )
+
     async def add_site(self, name: str, original_url: str) -> int:
         return await self._insert_or_get(
             self._insert_stmt("sites", ["name", "original_url"]),

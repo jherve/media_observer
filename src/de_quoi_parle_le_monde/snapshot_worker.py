@@ -3,6 +3,7 @@ import asyncio
 from attrs import frozen
 import traceback
 from loguru import logger
+from sentence_transformers import SentenceTransformer
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import (
@@ -106,3 +107,19 @@ async def download_all(
         return await asyncio.gather(
             *[worker.handle_snap(c, d) for d in dts for c in media_collection.values()]
         )
+
+
+@frozen
+class EmbeddingsWorker:
+    storage: Storage
+    model: SentenceTransformer
+
+    @staticmethod
+    def create(storage, model_path):
+        model = SentenceTransformer(model_path)
+        return EmbeddingsWorker(storage, model)
+
+
+async def compute_embeddings(storage: Storage):
+    worker = EmbeddingsWorker.create(storage, "dangvantuan/sentence-camembert-large")
+    return worker
