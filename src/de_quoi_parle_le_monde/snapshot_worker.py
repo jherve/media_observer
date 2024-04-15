@@ -84,15 +84,19 @@ class SnapshotWorker:
 
     async def handle_snap(self, collection, dt):
         try:
+            logger.info(f"Start handling snap for collection {collection.url} @ {dt}")
             id_closest = await self.find(collection, dt)
             closest = await self.ia_client.fetch(id_closest)
             main_page = await self.parse(collection, closest)
             await self.store(main_page, collection, dt)
+            logger.info(f"Snap for collection {collection.url} @ {dt} is stored")
         except Exception as e:
             return
 
 
-async def download_all(http_client: HttpClient, storage: Storage, n_days: int, hours: list[int]):
+async def download_all(
+    http_client: HttpClient, storage: Storage, n_days: int, hours: list[int]
+):
     dts = SnapshotWorker.last_n_days_at_hours(n_days, hours)
 
     async with http_client.session() as session:
