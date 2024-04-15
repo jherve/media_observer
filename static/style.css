@@ -1,3 +1,37 @@
 .admin {
     color: red;
 }
+
+#article_browser {
+    display: grid;
+    grid-template-areas: ". up ."
+    "before focused after"
+    ". down .";
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-rows: 1fr auto 1fr;
+}
+
+#article_browser .focused {
+    grid-area: focused;
+
+    align-self: center;
+    justify-self: center;
+    padding: 3em;
+}
+#article_browser .up {
+    grid-area: up;
+}
+#article_browser .before {
+    grid-area: before;
+}
+#article_browser .after {
+    grid-area: after;
+}
+#article_browser .down {
+    grid-area: down;
+}
+
+#article-browser ul {
+    list-style: none;
+    margin-block-start: 0;
+}

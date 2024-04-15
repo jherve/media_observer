@@ -14,8 +14,7 @@
     {%- endmacro %}
 
     <div id="article_browser">
-        <div class="simultaneous_up">
-            Up
+        <div class="up">
             <ul>
                 {% for a in simultaneous_up %}
                     <li>{{ article(a) }}</li>
@@ -25,22 +24,15 @@
         <div class="focused">{{ focused["title"] }}</div>
         {% if after %}
             <div class="after">
-                After
-                <ul>
-                    <li>{{ article(after) }} @ {{ after["time_diff"] }}</li>
-                </ul>
+                {{ article(after) }} @ {{ after["timestamp_virtual"] }}
             </div>
         {% endif %}
         {% if before %}
             <div class="before">
-                Before
-                <ul>
-                    <li>{{ article(before) }} @ {{ before["time_diff"] }}</li>
-                </ul>
+                {{ article(before) }} @ {{ before["timestamp_virtual"] }}
             </div>
         {% endif %}
-        <div class="simultaneous_down">
-            Down
+        <div class="down">
             <ul>
                 {% for a in simultaneous_down %}
                     <li>{{ article(a) }}</li>
