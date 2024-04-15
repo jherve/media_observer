@@ -346,6 +346,7 @@ class Storage:
             )
 
             return [{
+                "site_id": a[0],
                 "snapshot_id": a[1],
                 "featured_article_snapshot_id": a[2],
                 "original_url": a[3],

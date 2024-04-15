@@ -8,11 +8,9 @@ from de_quoi_parle_le_monde.storage import Storage
 
 
 app = FastAPI()
-
-
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
 templates = Jinja2Templates(directory="templates")
+
 
 async def get_db():
     return await Storage.create()
