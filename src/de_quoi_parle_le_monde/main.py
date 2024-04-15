@@ -14,7 +14,7 @@ from de_quoi_parle_le_monde.storage import Storage
 
 
 @frozen
-class ArchiveDownloader:
+class SnapshotWorker:
     storage: Storage
     ia_client: InternetArchiveClient
 
@@ -93,14 +93,14 @@ class ArchiveDownloader:
 
 
 async def download_all(http_client: HttpClient, storage: Storage, n_days: int, hours: list[int]):
-    dts = ArchiveDownloader.last_n_days_at_hours(n_days, hours)
+    dts = SnapshotWorker.last_n_days_at_hours(n_days, hours)
 
     async with http_client.session() as session:
         ia = InternetArchiveClient(session)
-        dler = ArchiveDownloader(storage, ia)
+        worker = SnapshotWorker(storage, ia)
 
         return await asyncio.gather(
-            *[dler.handle_snap(c, d) for d in dts for c in media_collection.values()]
+            *[worker.handle_snap(c, d) for d in dts for c in media_collection.values()]
         )
 
 
