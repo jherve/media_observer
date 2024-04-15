@@ -3,7 +3,6 @@ import asyncio
 from attrs import frozen
 import traceback
 from loguru import logger
-from sentence_transformers import SentenceTransformer
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.internet_archive import (
@@ -129,7 +128,7 @@ async def download_all(
 @frozen
 class EmbeddingsWorker:
     storage: Storage
-    model: SentenceTransformer
+    model: Any
 
     def compute_embeddings_for(self, sentences: dict[int, str]):
         logger.debug(f"Computing embeddings for {len(sentences)} sentences")
@@ -154,6 +153,8 @@ class EmbeddingsWorker:
 
     @staticmethod
     def create(storage, model_path):
+        from sentence_transformers import SentenceTransformer
+
         model = SentenceTransformer(model_path)
         return EmbeddingsWorker(storage, model)
 
