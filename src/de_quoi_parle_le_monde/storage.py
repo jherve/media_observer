@@ -2,6 +2,7 @@ from typing import Any
 import aiosqlite
 import asyncio
 from datetime import datetime
+import numpy as np
 
 from de_quoi_parle_le_monde.article import (
     TopArticle,
@@ -287,6 +288,31 @@ class Storage:
                     ["snapshot_id", "featured_article_snapshot_id", "rank"],
                 ),
                 [snapshot_id, article_id, article.rank],
+            )
+            await conn.commit()
+
+    async def list_all_featured_article_snapshots(self):
+        async with self.conn as conn:
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM featured_article_snapshots
+                """,
+            )
+
+            return [
+                {"id": r[0], "featured_article_id": r[1], "title": r[2], "url": r[3]}
+                for r in rows
+            ]
+
+    async def add_embedding(self, featured_article_snapshot_id: int, embedding):
+        async with self.conn as conn:
+            await conn.execute_insert(
+                self._insert_stmt(
+                    "articles_embeddings",
+                    ["featured_article_snapshot_id", "title_embedding"],
+                ),
+                [featured_article_snapshot_id, embedding],
             )
             await conn.commit()
 
