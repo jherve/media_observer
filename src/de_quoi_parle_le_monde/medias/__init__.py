@@ -6,11 +6,18 @@ from .cnews import CNewsMainPage
 
 
 media_collection = {
-    "france_tv_info": ArchiveCollection(
-        url="https://francetvinfo.fr", MainPageClass=FranceTvInfoMainPage
-    ),
-    "le_monde": ArchiveCollection(
-        url="https://lemonde.fr", MainPageClass=LeMondeMainPage
-    ),
-    "cnews": ArchiveCollection(url="https://cnews.fr", MainPageClass=CNewsMainPage),
+    c.name: c
+    for c in [
+        ArchiveCollection(
+            name="france_tv_info",
+            url="https://francetvinfo.fr",
+            MainPageClass=FranceTvInfoMainPage,
+        ),
+        ArchiveCollection(
+            name="le_monde", url="https://lemonde.fr", MainPageClass=LeMondeMainPage
+        ),
+        ArchiveCollection(
+            name="cnews", url="https://cnews.fr", MainPageClass=CNewsMainPage
+        ),
+    ]
 }

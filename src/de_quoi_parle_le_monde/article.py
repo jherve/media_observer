@@ -78,6 +78,7 @@ class MainPage(ABC):
 
 @frozen
 class ArchiveCollection:
+    name: str
     url: str
     MainPageClass: type[MainPage]
 

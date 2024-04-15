@@ -30,11 +30,11 @@ class SnapshotWorker:
         try:
             return await self.ia_client.get_snapshot_id_closest_to(collection.url, dt)
         except SnapshotNotYetAvailable as e:
-            logger.warning(f"Snapshot for {collection.url} @ {dt} not yet available")
+            logger.warning(f"Snapshot for {collection.name} @ {dt} not yet available")
             raise e
         except Exception as e:
             logger.error(
-                f"Error while trying to find snapshot for {collection.url} @ {dt}"
+                f"Error while trying to find snapshot for {collection.name} @ {dt}"
             )
             traceback.print_exception(e)
             raise e
@@ -57,7 +57,7 @@ class SnapshotWorker:
 
     async def store(self, page, collection, dt):
         try:
-            site_id = await self.storage.add_site(collection.url)
+            site_id = await self.storage.add_site(collection.name, collection.url)
             snapshot_id = await self.storage.add_snapshot(site_id, page.snapshot.id, dt)
 
             article_id = await self.storage.add_featured_article(
@@ -77,19 +77,19 @@ class SnapshotWorker:
 
         except Exception as e:
             logger.error(
-                f"Error while attempting to store {page} from {collection} @ {dt}"
+                f"Error while attempting to store {page} from {collection.name} @ {dt}"
             )
             traceback.print_exception(e)
             raise e
 
     async def handle_snap(self, collection, dt):
         try:
-            logger.info(f"Start handling snap for collection {collection.url} @ {dt}")
+            logger.info(f"Start handling snap for collection {collection.name} @ {dt}")
             id_closest = await self.find(collection, dt)
             closest = await self.ia_client.fetch(id_closest)
             main_page = await self.parse(collection, closest)
             await self.store(main_page, collection, dt)
-            logger.info(f"Snap for collection {collection.url} @ {dt} is stored")
+            logger.info(f"Snap for collection {collection.name} @ {dt} is stored")
         except Exception as e:
             return
 

@@ -56,14 +56,15 @@ class Storage:
                 """
                 CREATE TABLE IF NOT EXISTS sites (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT,
                     original_url TEXT
                 );
                 """
             )
             await conn.execute(
                 """
-                CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_original_url
-                ON sites (original_url);
+                CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_name
+                ON sites (name);
                 """
             )
 
@@ -193,16 +194,16 @@ class Storage:
                 """
             )
 
-    async def add_site(self, original_url: str) -> int:
+    async def add_site(self, name: str, original_url: str) -> int:
         return await self._insert_or_get(
-            self._insert_stmt("sites", ["original_url"]),
-            [original_url],
+            self._insert_stmt("sites", ["name", "original_url"]),
+            [name, original_url],
             """
                     SELECT id
                     FROM sites
-                    WHERE original_url = ?
+                    WHERE name = ?
                     """,
-            [original_url],
+            [name],
         )
 
     async def add_snapshot(
