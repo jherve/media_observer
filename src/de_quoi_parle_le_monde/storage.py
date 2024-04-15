@@ -305,6 +305,17 @@ class Storage:
                 for r in rows
             ]
 
+    async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
+        async with self.conn as conn:
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT featured_article_snapshot_id
+                    FROM articles_embeddings
+                """,
+            )
+
+            return [r[0] for r in rows]
+
     async def add_embedding(self, featured_article_snapshot_id: int, embedding):
         async with self.conn as conn:
             await conn.execute_insert(
