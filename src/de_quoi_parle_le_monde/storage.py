@@ -358,6 +358,43 @@ class Storage:
                 for a in main_articles
             ]
 
+    async def list_neighbouring_main_articles(
+        self,
+        site_id: int,
+        featured_article_snapshot_id: int | None = None,
+        max_interval_s: int = 3600 * 12,
+    ):
+        async with self.conn as conn:
+            main_articles = await conn.execute_fetchall(
+                """
+                SELECT mav.*, unixepoch(mav.timestamp_virtual) - unixepoch((
+                    SELECT timestamp_virtual
+                    FROM main_articles_view mav
+                    WHERE site_id = ? AND featured_article_snapshot_id = ?
+                )) AS time_diff
+                FROM main_articles_view mav
+                WHERE
+                    (site_id = ? AND abs(time_diff) < ?)
+                    OR time_diff = 0
+                ORDER BY abs(time_diff) ASC
+                """,
+                [site_id, featured_article_snapshot_id, site_id, max_interval_s],
+            )
+
+            return [
+                {
+                    "site_id": a[0],
+                    "snapshot_id": a[1],
+                    "featured_article_snapshot_id": a[2],
+                    "original_url": a[3],
+                    "timestamp_virtual": a[4],
+                    "title": a[5],
+                    "url": a[6],
+                    "time_diff": a[7],
+                }
+                for a in main_articles
+            ]
+
     async def select_from(self, table):
         async with self.conn as conn:
             return await conn.execute_fetchall(
