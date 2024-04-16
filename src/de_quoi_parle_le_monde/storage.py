@@ -300,10 +300,27 @@ class Storage:
                 """,
             )
 
-            return [
-                {"id": r[0], "featured_article_id": r[1], "title": r[2], "url": r[3]}
-                for r in rows
-            ]
+            return [self._from_featured_article_snapshot_row(r) for r in rows]
+
+    async def list_featured_article_snapshots(
+        self, featured_article_snapshot_ids: list[int]
+    ):
+        async with self.conn as conn:
+            placeholders = ", ".join(["?" for _ in featured_article_snapshot_ids])
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM featured_article_snapshots
+                    WHERE id IN ({placeholders})
+                """,
+                featured_article_snapshot_ids,
+            )
+
+            return [self._from_featured_article_snapshot_row(r) for r in rows]
+
+    @staticmethod
+    def _from_featured_article_snapshot_row(r):
+        return {"id": r[0], "featured_article_id": r[1], "title": r[2], "url": r[3]}
 
     async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
         async with self.conn as conn:

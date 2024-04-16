@@ -55,6 +55,21 @@ async def site_main_article_snapshot(
     same_site_articles = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] != 0
     ]
+    [(_, similar)] = await sim_index.search(
+        [focused_article["featured_article_snapshot_id"]],
+        20,
+        lambda s: s < 1.0 and s >= 0.5,
+    )
+    similar_by_id = {s[0]: s[1] for s in similar}
+    similar_articles = await storage.list_featured_article_snapshots(
+        list(similar_by_id.keys())
+    )
+    # A list of articles and score, sorted by descending score
+    similar_articles_and_score = sorted(
+        [(a, similar_by_id[a["id"]]) for a in similar_articles],
+        key=lambda a: a[1],
+        reverse=True,
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -62,6 +77,7 @@ async def site_main_article_snapshot(
         context={
             "site_id": id,
             "focused": focused_article,
+            "similar": similar_articles_and_score,
             "simultaneous_up": [
                 a
                 for a in simultaneous_articles
