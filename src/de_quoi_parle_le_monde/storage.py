@@ -291,6 +291,20 @@ class Storage:
             )
             await conn.commit()
 
+    async def exists_snapshot(self, name: str, dt: datetime):
+        async with self.conn as conn:
+            exists = await conn.execute_fetchall(
+                f"""
+                    SELECT 1
+                    FROM snapshots snap
+                    JOIN sites s ON s.id = snap.site_id
+                    WHERE s.name = ? AND timestamp_virtual = ?
+                """,
+                [name, dt],
+            )
+
+            return exists != []
+
     async def list_all_featured_article_snapshots(self):
         async with self.conn as conn:
             rows = await conn.execute_fetchall(

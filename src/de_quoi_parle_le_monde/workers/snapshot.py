@@ -97,6 +97,10 @@ class SnapshotWorker:
         collection = job.collection
         dt = job.dt
 
+        if await self.storage.exists_snapshot(collection.name, dt):
+            # The snapshot is already stored, skipping
+            return
+
         try:
             logger.info(f"Start handling snap for collection {collection.name} @ {dt}")
             id_closest = await self.find(collection, dt)
