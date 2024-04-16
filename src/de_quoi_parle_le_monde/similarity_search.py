@@ -1,4 +1,5 @@
 from typing import Callable
+from loguru import logger
 import faiss
 import numpy as np
 
@@ -26,6 +27,17 @@ class SimilaritySearch:
         score_func: Callable[[float], bool],
     ):
         embeds = await self.storage.get_article_embedding(featured_article_snapshot_ids)
+
+        if (nb_embeds := len(embeds)) != (
+            nb_articles := len(featured_article_snapshot_ids)
+        ):
+            msg = (
+                f"Expected {nb_articles} embedding(s) in storage but found only {nb_embeds}. "
+                "A plausible cause is that they have not been computed yet"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
         all_titles = np.array([e["title_embedding"] for e in embeds])
         faiss.normalize_L2(all_titles)
         D, I = self.index.search(np.array(all_titles), nb_results)

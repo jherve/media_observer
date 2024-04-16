@@ -55,11 +55,16 @@ async def site_main_article_snapshot(
     same_site_articles = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] != 0
     ]
-    [(_, similar)] = await sim_index.search(
-        [focused_article["featured_article_snapshot_id"]],
-        20,
-        lambda s: s < 1.0 and s >= 0.5,
-    )
+
+    try:
+        [(_, similar)] = await sim_index.search(
+            [focused_article["featured_article_snapshot_id"]],
+            20,
+            lambda s: s < 1.0 and s >= 0.5,
+        )
+    except ValueError:
+        similar = []
+
     similar_by_id = {s[0]: s[1] for s in similar}
     similar_articles = await storage.list_featured_article_snapshots(
         list(similar_by_id.keys())
