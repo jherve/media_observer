@@ -9,6 +9,7 @@ from attrs import frozen
 from de_quoi_parle_le_monde.web import app
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.storage import Storage
+from de_quoi_parle_le_monde.workers.snapshot import SnapshotJob, SnapshotWorker
 
 
 @frozen
@@ -19,12 +20,20 @@ class Application:
     web_config: Config
 
     async def run(self):
-        await asyncio.gather(self._run_web_server())
+        await asyncio.gather(self._run_web_server(), self._run_snapshot_worker())
         logger.info("Will quit now..")
 
     async def _run_web_server(self):
         logger.info("Starting web server..")
         await serve(self.web_app, self.web_config)
+
+    async def _run_snapshot_worker(self):
+        logger.info("Starting snapshot service..")
+        jobs = SnapshotJob.create(10, [18])
+
+        async with self.http_client.session() as session:
+            worker = SnapshotWorker.create(self.storage, session)
+            await asyncio.gather(*[worker.run(job) for job in jobs])
 
     @staticmethod
     async def create():
