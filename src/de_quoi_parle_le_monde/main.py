@@ -14,6 +14,7 @@ from de_quoi_parle_le_monde.workers.embeddings import (
     EmbeddingsJob,
     EmbeddingsWorker,
 )
+from de_quoi_parle_le_monde.similarity_search import SimilaritySearch
 
 
 @frozen
@@ -22,11 +23,13 @@ class Application:
     storage: Storage
     web_app: Framework
     web_config: Config
+    similarity_index: SimilaritySearch
 
     async def run(self):
         await asyncio.gather(
             self._run_web_server(),
             self._run_snapshot_worker(),
+            self._run_similarity_index(),
             self._run_embeddings_worker(),
         )
         logger.info("Will quit now..")
@@ -55,14 +58,20 @@ class Application:
         )
         await worker.run(jobs)
 
+    async def _run_similarity_index(self):
+        logger.info("Starting index..")
+        await self.similarity_index.add_embeddings()
+        logger.info("Similarity index ready")
+
     @staticmethod
     async def create():
         http_client = HttpClient()
         storage = await Storage.create()
         web_app = app
         web_config = Config()
+        sim_index = SimilaritySearch.create(storage)
 
-        return Application(http_client, storage, web_app, web_config)
+        return Application(http_client, storage, web_app, web_config, sim_index)
 
 
 async def main():

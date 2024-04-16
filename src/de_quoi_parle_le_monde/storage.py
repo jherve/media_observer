@@ -316,6 +316,45 @@ class Storage:
 
             return [r[0] for r in rows]
 
+    async def list_all_articles_embeddings(self):
+        async with self.conn as conn:
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM articles_embeddings
+                """,
+            )
+
+            return [
+                {
+                    "id": r[0],
+                    "featured_article_snapshot_id": r[1],
+                    "title_embedding": np.frombuffer(r[2], dtype="float32"),
+                }
+                for r in rows
+            ]
+
+    async def get_article_embedding(self, featured_article_snapshot_ids: list[int]):
+        async with self.conn as conn:
+            placeholders = ", ".join(["?" for _ in featured_article_snapshot_ids])
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM articles_embeddings
+                    WHERE featured_article_snapshot_id IN ({placeholders})
+                """,
+                featured_article_snapshot_ids,
+            )
+
+            return [
+                {
+                    "id": r[0],
+                    "featured_article_snapshot_id": r[1],
+                    "title_embedding": np.frombuffer(r[2], dtype="float32"),
+                }
+                for r in rows
+            ]
+
     async def add_embedding(self, featured_article_snapshot_id: int, embedding):
         async with self.conn as conn:
             await conn.execute_insert(

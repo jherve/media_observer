@@ -5,6 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
+from de_quoi_parle_le_monde.similarity_search import SimilaritySearch
 
 
 app = FastAPI()
@@ -14,6 +15,10 @@ templates = Jinja2Templates(directory="templates")
 
 async def get_db():
     return await Storage.create()
+
+
+async def get_similarity_search(storage: Storage = Depends(get_db)):
+    return SimilaritySearch.create(storage)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -30,6 +35,7 @@ async def site_main_article_snapshot(
     id: int,
     snapshot_id: int,
     storage: Storage = Depends(get_db),
+    sim_index: SimilaritySearch = Depends(get_similarity_search),
 ):
     def get_article_sibling(after_before_articles, cond_fun):
         return min(
