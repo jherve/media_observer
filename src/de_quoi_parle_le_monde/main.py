@@ -37,6 +37,7 @@ class Application:
     async def _run_web_server(self):
         logger.info("Starting web server..")
         await serve(self.web_app, self.web_config)
+        logger.info("Web server exiting")
 
     async def _run_snapshot_worker(self):
         logger.info("Starting snapshot service..")
@@ -45,6 +46,7 @@ class Application:
         async with self.http_client.session() as session:
             worker = SnapshotWorker.create(self.storage, session)
             await asyncio.gather(*[worker.run(job) for job in jobs])
+        logger.info("Snapshot service exiting")
 
     async def _run_embeddings_worker(self):
         logger.info("Starting embeddings service..")
@@ -57,6 +59,7 @@ class Application:
             "dangvantuan/sentence-camembert-large",
         )
         await worker.run(jobs)
+        logger.info("Embeddings service exiting")
 
     async def _run_similarity_index(self):
         logger.info("Starting index..")
