@@ -342,14 +342,7 @@ class Storage:
                 """,
             )
 
-            return [
-                {
-                    "id": r[0],
-                    "featured_article_snapshot_id": r[1],
-                    "title_embedding": np.frombuffer(r[2], dtype="float32"),
-                }
-                for r in rows
-            ]
+            return [self._from_articles_embeddings_row(r) for r in rows]
 
     async def get_article_embedding(self, featured_article_snapshot_ids: list[int]):
         async with self.conn as conn:
@@ -363,14 +356,15 @@ class Storage:
                 featured_article_snapshot_ids,
             )
 
-            return [
-                {
-                    "id": r[0],
-                    "featured_article_snapshot_id": r[1],
-                    "title_embedding": np.frombuffer(r[2], dtype="float32"),
-                }
-                for r in rows
-            ]
+            return [self._from_articles_embeddings_row(r) for r in rows]
+
+    @staticmethod
+    def _from_articles_embeddings_row(r):
+        return {
+            "id": r[0],
+            "featured_article_snapshot_id": r[1],
+            "title_embedding": np.frombuffer(r[2], dtype="float32"),
+        }
 
     async def add_embedding(self, featured_article_snapshot_id: int, embedding):
         async with self.conn as conn:
@@ -390,7 +384,7 @@ class Storage:
 
     async def list_main_articles(self, site_id: int, limit: int = 5):
         async with self.conn as conn:
-            main_articles = await conn.execute_fetchall(
+            rows = await conn.execute_fetchall(
                 f"""
                     SELECT *
                     FROM main_articles_view
@@ -401,18 +395,7 @@ class Storage:
                 [site_id, limit],
             )
 
-            return [
-                {
-                    "site_id": a[0],
-                    "snapshot_id": a[1],
-                    "featured_article_snapshot_id": a[2],
-                    "original_url": a[3],
-                    "timestamp_virtual": a[4],
-                    "title": a[5],
-                    "url": a[6],
-                }
-                for a in main_articles
-            ]
+            return [self._from_main_article_view_row(r) for r in rows]
 
     async def list_neighbouring_main_articles(
         self,
@@ -438,18 +421,21 @@ class Storage:
             )
 
             return [
-                {
-                    "site_id": a[0],
-                    "snapshot_id": a[1],
-                    "featured_article_snapshot_id": a[2],
-                    "original_url": a[3],
-                    "timestamp_virtual": a[4],
-                    "title": a[5],
-                    "url": a[6],
-                    "time_diff": a[7],
-                }
+                self._from_main_article_view_row(a) | {"time_diff": a[7]}
                 for a in main_articles
             ]
+
+    @staticmethod
+    def _from_main_article_view_row(r):
+        return {
+            "site_id": r[0],
+            "snapshot_id": r[1],
+            "featured_article_snapshot_id": r[2],
+            "original_url": r[3],
+            "timestamp_virtual": r[4],
+            "title": r[5],
+            "url": r[6],
+        }
 
     async def select_from(self, table):
         async with self.conn as conn:
