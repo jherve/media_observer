@@ -41,6 +41,7 @@ async def site_main_article_snapshot(
         return min(
             [a for a in after_before_articles if cond_fun(a)],
             key=lambda a: abs(a["time_diff"]),
+            default=None,
         )
 
     main_articles = await storage.list_neighbouring_main_articles(id, snapshot_id)
