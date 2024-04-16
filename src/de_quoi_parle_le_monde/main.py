@@ -41,7 +41,7 @@ class Application:
 
     async def _run_snapshot_worker(self):
         logger.info("Starting snapshot service..")
-        jobs = SnapshotJob.create(10, [18])
+        jobs = SnapshotJob.create(10, [8, 12, 18, 22])
 
         async with self.http_client.session() as session:
             worker = SnapshotWorker.create(self.storage, session)
