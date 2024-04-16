@@ -401,23 +401,43 @@ class Storage:
         self,
         site_id: int,
         featured_article_snapshot_id: int | None = None,
-        max_interval_s: int = 3600 * 12,
     ):
         async with self.conn as conn:
+            # This query is the union of 3 queries that respectively fetch :
+            #   * articles published at the same time as the queried article (including the queried article)
+            #   * the article published just after, on the same site
+            #   *the article published just before, on the same site
             main_articles = await conn.execute_fetchall(
-                """
-                SELECT mav.*, unixepoch(mav.timestamp_virtual) - unixepoch((
+                f"""
+                WITH original_timestamp AS
+                (
                     SELECT timestamp_virtual
                     FROM main_articles_view mav
                     WHERE site_id = ? AND featured_article_snapshot_id = ?
-                )) AS time_diff
-                FROM main_articles_view mav
-                WHERE
-                    (site_id = ? AND abs(time_diff) < ?)
-                    OR time_diff = 0
-                ORDER BY abs(time_diff) ASC
+                ), mav_diff AS (
+                    SELECT mav.*, unixepoch(mav.timestamp_virtual) - unixepoch((SELECT * FROM original_timestamp)) AS time_diff
+                    FROM main_articles_view mav
+                )
+                SELECT * FROM (
+                    SELECT * FROM mav_diff
+                    WHERE time_diff = 0
+                )
+                UNION ALL
+                SELECT * FROM (
+                    SELECT * FROM mav_diff
+                    WHERE site_id = ? AND time_diff > 0
+                    ORDER BY time_diff
+                    LIMIT 1
+                )
+                UNION ALL
+                SELECT * FROM (
+                    SELECT * FROM mav_diff
+                    WHERE site_id = ? AND time_diff < 0
+                    ORDER BY time_diff DESC
+                    LIMIT 1
+                )
                 """,
-                [site_id, featured_article_snapshot_id, site_id, max_interval_s],
+                [site_id, featured_article_snapshot_id, site_id, site_id],
             )
 
             return [
