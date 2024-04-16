@@ -403,17 +403,35 @@ class Storage:
         featured_article_snapshot_id: int | None = None,
     ):
         async with self.conn as conn:
+            if featured_article_snapshot_id is None:
+                timestamp_query, timestamp_params = (
+                    """
+                    SELECT timestamp_virtual
+                    FROM main_articles_view mav
+                    WHERE site_id = ?
+                    ORDER BY timestamp_virtual DESC
+                    LIMIT 1
+                    """,
+                    [site_id],
+                )
+            else:
+                timestamp_query, timestamp_params = (
+                    """
+                    SELECT timestamp_virtual
+                    FROM main_articles_view mav
+                    WHERE site_id = ? AND featured_article_snapshot_id = ?
+                    """,
+                    [site_id, featured_article_snapshot_id],
+                )
+
             # This query is the union of 3 queries that respectively fetch :
             #   * articles published at the same time as the queried article (including the queried article)
             #   * the article published just after, on the same site
             #   *the article published just before, on the same site
             main_articles = await conn.execute_fetchall(
                 f"""
-                WITH original_timestamp AS
-                (
-                    SELECT timestamp_virtual
-                    FROM main_articles_view mav
-                    WHERE site_id = ? AND featured_article_snapshot_id = ?
+                WITH original_timestamp AS (
+                    {timestamp_query}
                 ), mav_diff AS (
                     SELECT mav.*, unixepoch(mav.timestamp_virtual) - unixepoch((SELECT * FROM original_timestamp)) AS time_diff
                     FROM main_articles_view mav
@@ -437,7 +455,7 @@ class Storage:
                     LIMIT 1
                 )
                 """,
-                [site_id, featured_article_snapshot_id, site_id, site_id],
+                timestamp_params + [site_id, site_id],
             )
 
             return [

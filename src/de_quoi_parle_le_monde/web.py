@@ -29,11 +29,12 @@ async def index(request: Request, storage: Storage = Depends(get_db)):
     )
 
 
+@app.get("/sites/{id}/main_article", response_class=HTMLResponse)
 @app.get("/sites/{id}/main_article/{snapshot_id}", response_class=HTMLResponse)
 async def site_main_article_snapshot(
     request: Request,
     id: int,
-    snapshot_id: int,
+    snapshot_id: int | None = None,
     storage: Storage = Depends(get_db),
     sim_index: SimilaritySearch = Depends(get_similarity_search),
 ):
@@ -46,9 +47,7 @@ async def site_main_article_snapshot(
 
     main_articles = await storage.list_neighbouring_main_articles(id, snapshot_id)
     [focused_article] = [
-        a
-        for a in main_articles
-        if a["site_id"] == id and a["featured_article_snapshot_id"] == snapshot_id
+        a for a in main_articles if a["site_id"] == id and a["time_diff"] == 0
     ]
     simultaneous_articles = [
         a for a in main_articles if a["site_id"] != id and a["time_diff"] == 0
@@ -103,22 +102,6 @@ async def site_main_article_snapshot(
                 lambda a: a["time_diff"] < 0,
             ),
         },
-    )
-
-
-@app.get("/sites/{id}/main_article", response_class=HTMLResponse)
-async def site_main_article(
-    request: Request,
-    id: int,
-    limit: int | None = None,
-    storage: Storage = Depends(get_db),
-):
-    opt_args = [limit] if limit is not None else []
-    main_articles = await storage.list_main_articles(id, *opt_args)
-    return templates.TemplateResponse(
-        request=request,
-        name="site_detail.html",
-        context={"site_id": id, "main_articles": main_articles},
     )
 
 
