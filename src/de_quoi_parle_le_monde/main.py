@@ -10,6 +10,10 @@ from de_quoi_parle_le_monde.web import app
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.storage import Storage
 from de_quoi_parle_le_monde.workers.snapshot import SnapshotJob, SnapshotWorker
+from de_quoi_parle_le_monde.workers.embeddings import (
+    EmbeddingsJob,
+    EmbeddingsWorker,
+)
 
 
 @frozen
@@ -20,7 +24,11 @@ class Application:
     web_config: Config
 
     async def run(self):
-        await asyncio.gather(self._run_web_server(), self._run_snapshot_worker())
+        await asyncio.gather(
+            self._run_web_server(),
+            self._run_snapshot_worker(),
+            self._run_embeddings_worker(),
+        )
         logger.info("Will quit now..")
 
     async def _run_web_server(self):
@@ -34,6 +42,18 @@ class Application:
         async with self.http_client.session() as session:
             worker = SnapshotWorker.create(self.storage, session)
             await asyncio.gather(*[worker.run(job) for job in jobs])
+
+    async def _run_embeddings_worker(self):
+        logger.info("Starting embeddings service..")
+        jobs = await EmbeddingsJob.create(self.storage)
+        loop = asyncio.get_event_loop()
+        worker = await loop.run_in_executor(
+            None,
+            EmbeddingsWorker.create,
+            self.storage,
+            "dangvantuan/sentence-camembert-large",
+        )
+        await worker.run(jobs)
 
     @staticmethod
     async def create():
