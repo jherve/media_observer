@@ -9,7 +9,7 @@
 
     {% macro article(a) -%}
         <a href="{{ url_for('site_main_article_snapshot', id=a['site_id'], snapshot_id=a['featured_article_snapshot_id']) }}">
-            {{ a["title"] }}
+            [{{ a["site_name"] }}] {{ a["title"] }}
         </a>
     {%- endmacro %}
 

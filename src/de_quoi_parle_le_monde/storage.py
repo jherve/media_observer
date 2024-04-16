@@ -152,21 +152,32 @@ class Storage:
 
             await conn.execute(
                 """
-                CREATE VIEW IF NOT EXISTS main_articles_view AS
+                CREATE VIEW IF NOT EXISTS snapshots_view AS
                     SELECT
                         si.id AS site_id,
                         s.id AS snapshot_id,
+                        si.name AS site_name,
+                        si.original_url AS site_original_url,
+                        s.timestamp_virtual
+                    FROM
+                        snapshots AS s
+                    JOIN
+                        sites AS si ON si.id = s.site_id
+                """
+            )
+
+            await conn.execute(
+                """
+                CREATE VIEW IF NOT EXISTS main_articles_view AS
+                    SELECT
+                        s.*,
                         fas.id AS featured_article_snapshot_id,
-                        si.original_url AS original_url,
-                        s.timestamp_virtual,
                         fas.title,
                         fas.url
                     FROM
                         main_articles as m
                     JOIN
-                        snapshots AS s ON s.id = m.snapshot_id
-                    JOIN
-                        sites AS si ON si.id = s.site_id
+                        snapshots_view AS s ON s.snapshot_id = m.snapshot_id
                     JOIN
                         featured_article_snapshots AS fas ON m.featured_article_snapshot_id = fas.id
                 """
@@ -176,20 +187,15 @@ class Storage:
                 """
                 CREATE VIEW IF NOT EXISTS top_articles_view AS
                     SELECT
-                        si.id AS site_id,
-                        s.id AS snapshot_id,
+                        s.*,
                         fas.id AS featured_article_snapshot_id,
-                        si.original_url AS original_url,
-                        s.timestamp_virtual,
                         fas.title,
                         fas.url,
                         t.rank
                     FROM
                         top_articles as t
                     JOIN
-                        snapshots AS s ON s.id = t.snapshot_id
-                    JOIN
-                        sites AS si ON si.id = s.site_id
+                        snapshots_view AS s ON s.snapshot_id = t.snapshot_id
                     JOIN
                         featured_article_snapshots AS fas ON t.featured_article_snapshot_id = fas.id
                 """
@@ -473,21 +479,24 @@ class Storage:
             )
 
             return [
-                self._from_main_article_view_row(a) | {"time_diff": a[7]}
+                self._from_main_article_view_row(a) | {"time_diff": a[8]}
                 for a in main_articles
             ]
 
     @staticmethod
     def _from_main_article_view_row(r):
-        return {
-            "site_id": r[0],
-            "snapshot_id": r[1],
-            "featured_article_snapshot_id": r[2],
-            "original_url": r[3],
-            "timestamp_virtual": r[4],
-            "title": r[5],
-            "url": r[6],
-        }
+        columns = [
+            "site_id",
+            "snapshot_id",
+            "site_name",
+            "site_original_url",
+            "timestamp_virtual",
+            "featured_article_snapshot_id",
+            "title",
+            "url",
+        ]
+
+        return {col: r[idx] for idx, col in enumerate(columns)}
 
     async def select_from(self, table):
         async with self.conn as conn:
