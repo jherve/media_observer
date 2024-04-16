@@ -63,8 +63,11 @@ class Application:
 
     async def _run_similarity_index(self):
         logger.info("Starting index..")
-        await self.similarity_index.add_embeddings()
-        logger.info("Similarity index ready")
+        try:
+            await self.similarity_index.add_embeddings()
+            logger.info("Similarity index ready")
+        except ValueError:
+            ...
 
     @staticmethod
     async def create():

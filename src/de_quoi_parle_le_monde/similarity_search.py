@@ -14,6 +14,14 @@ class SimilaritySearch:
 
     async def add_embeddings(self):
         embeds = await self.storage.list_all_articles_embeddings()
+        if not embeds:
+            msg = (
+                f"Did not find any embeddings in storage. "
+                "A plausible cause is that they have not been computed yet"
+            )
+            logger.error(msg)
+            raise ValueError(msg)
+
         all_titles = np.array([e["title_embedding"] for e in embeds])
         faiss.normalize_L2(all_titles)
         self.index.add_with_ids(
