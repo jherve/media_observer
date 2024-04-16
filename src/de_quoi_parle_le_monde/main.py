@@ -1,7 +1,9 @@
 import asyncio
+from hypercorn.typing import Framework
 from loguru import logger
 from hypercorn.config import Config
 from hypercorn.asyncio import serve
+from attrs import frozen
 
 
 from de_quoi_parle_le_monde.web import app
@@ -9,12 +11,35 @@ from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.storage import Storage
 
 
+@frozen
+class Application:
+    http_client: HttpClient
+    storage: Storage
+    web_app: Framework
+    web_config: Config
+
+    async def run(self):
+        await asyncio.gather(self._run_web_server())
+        logger.info("Will quit now..")
+
+    async def _run_web_server(self):
+        logger.info("Starting web server..")
+        await serve(self.web_app, self.web_config)
+
+    @staticmethod
+    async def create():
+        http_client = HttpClient()
+        storage = await Storage.create()
+        web_app = app
+        web_config = Config()
+
+        return Application(http_client, storage, web_app, web_config)
+
+
 async def main():
-    http_client = HttpClient()
-    storage = await Storage.create()
-
-    await serve(app, Config())
-    logger.info("Will quit now..")
+    full_application = await Application.create()
+    await full_application.run()
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())
