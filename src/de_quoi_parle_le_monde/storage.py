@@ -438,21 +438,6 @@ class Storage:
             sites = await conn.execute_fetchall("SELECT * FROM sites")
             return [{"id": s[0], "original_url": s[1], "name": s[2]} for s in sites]
 
-    async def list_main_articles(self, site_id: int, limit: int = 5):
-        async with self.conn as conn:
-            rows = await conn.execute_fetchall(
-                f"""
-                    SELECT *
-                    FROM main_articles_view
-                    WHERE site_id = ?
-                    ORDER BY timestamp_virtual DESC
-                    LIMIT ?
-                """,
-                [site_id, limit],
-            )
-
-            return [self._from_main_article_view_row(r) for r in rows]
-
     async def list_neighbouring_main_articles(
         self,
         site_id: int,
