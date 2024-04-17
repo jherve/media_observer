@@ -236,6 +236,25 @@ class Storage:
 
             await conn.execute(
                 """
+                CREATE VIEW IF NOT EXISTS main_page_apparitions AS
+                    SELECT
+                        fas.id,
+                        fas.featured_article_id,
+                        fas.title,
+                        fas.url AS url_archive,
+                        fa.url AS url_article,
+                        m.snapshot_id AS main_in_snapshot_id,
+                        t.snapshot_id AS top_in_snapshot_id,
+                        t.rank
+                    FROM featured_article_snapshots fas
+                    JOIN featured_articles fa ON fa.id = fas.featured_article_id
+                    LEFT JOIN main_articles m ON m.featured_article_snapshot_id = fas.id
+                    LEFT JOIN top_articles t ON t.featured_article_snapshot_id = fas.id
+                """
+            )
+
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS articles_embeddings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
