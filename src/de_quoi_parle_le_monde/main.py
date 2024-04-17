@@ -51,14 +51,16 @@ class Application:
     async def _run_embeddings_worker(self):
         logger.info("Starting embeddings service..")
         jobs = await EmbeddingsJob.create(self.storage)
-        loop = asyncio.get_event_loop()
-        worker = await loop.run_in_executor(
-            None,
-            EmbeddingsWorker.create,
-            self.storage,
-            "dangvantuan/sentence-camembert-large",
-        )
-        await worker.run(jobs)
+        if jobs:
+            loop = asyncio.get_event_loop()
+            worker = await loop.run_in_executor(
+                None,
+                EmbeddingsWorker.create,
+                self.storage,
+                "dangvantuan/sentence-camembert-large",
+            )
+            await worker.run(jobs)
+
         logger.info("Embeddings service exiting")
 
     async def _run_similarity_index(self):
