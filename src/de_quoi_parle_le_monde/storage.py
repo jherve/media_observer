@@ -44,10 +44,11 @@ class DbConnection:
 class Storage:
     columns = {
         "main_articles_view": [
-            "site_id",
             "snapshot_id",
+            "site_id",
             "site_name",
             "site_original_url",
+            "timestamp",
             "timestamp_virtual",
             "featured_article_snapshot_id",
             "title",
@@ -173,10 +174,11 @@ class Storage:
                 """
                 CREATE VIEW IF NOT EXISTS snapshots_view AS
                     SELECT
+                        s.id,
                         si.id AS site_id,
-                        s.id AS snapshot_id,
                         si.name AS site_name,
                         si.original_url AS site_original_url,
+                        s.timestamp,
                         s.timestamp_virtual
                     FROM
                         snapshots AS s
@@ -189,14 +191,19 @@ class Storage:
                 """
                 CREATE VIEW IF NOT EXISTS main_articles_view AS
                     SELECT
-                        s.*,
+                        s.id AS snapshot_id,
+                        s.site_id,
+                        s.site_name,
+                        s.site_original_url,
+                        s.timestamp,
+                        s.timestamp_virtual,
                         fas.id AS featured_article_snapshot_id,
                         fas.title,
                         fas.url
                     FROM
                         main_articles as m
                     JOIN
-                        snapshots_view AS s ON s.snapshot_id = m.snapshot_id
+                        snapshots_view AS s ON s.id = m.snapshot_id
                     JOIN
                         featured_article_snapshots AS fas ON m.featured_article_snapshot_id = fas.id
                 """
@@ -206,7 +213,12 @@ class Storage:
                 """
                 CREATE VIEW IF NOT EXISTS top_articles_view AS
                     SELECT
-                        s.*,
+                        s.id AS snapshot_id,
+                        s.site_id,
+                        s.site_name,
+                        s.site_original_url,
+                        s.timestamp,
+                        s.timestamp_virtual,
                         fas.id AS featured_article_snapshot_id,
                         fas.title,
                         fas.url,
@@ -214,7 +226,7 @@ class Storage:
                     FROM
                         top_articles as t
                     JOIN
-                        snapshots_view AS s ON s.snapshot_id = t.snapshot_id
+                        snapshots_view AS s ON s.id = t.snapshot_id
                     JOIN
                         featured_article_snapshots AS fas ON t.featured_article_snapshot_id = fas.id
                 """
@@ -501,7 +513,7 @@ class Storage:
             )
 
             return [
-                self._from_main_article_view_row(a) | {"time_diff": a[8]}
+                self._from_main_article_view_row(a) | {"time_diff": a[9]}
                 for a in main_articles
             ]
 
