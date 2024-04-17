@@ -23,6 +23,7 @@
         </div>
         <div class="focused">
             <h2>{{ focused["title"] }}</h2>
+            <p><a href="{{ focused['url_article'] }}">Lien</a></p>
             <ul>
                 {% for s in similar %}
                     <li>{{ s[1] }} {{ s[0]["title"] }}</li>
