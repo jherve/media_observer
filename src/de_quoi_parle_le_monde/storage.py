@@ -95,7 +95,9 @@ class Storage:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     site_id INTEGER REFERENCES sites (id) ON DELETE CASCADE,
                     timestamp TEXT,
-                    timestamp_virtual TEXT
+                    timestamp_virtual TEXT,
+                    url_original TEXT,
+                    url_snapshot TEXT
                 );
                 """
             )
@@ -265,9 +267,9 @@ class Storage:
     ) -> int:
         return await self._insert_or_get(
             self._insert_stmt(
-                "snapshots", ["timestamp", "site_id", "timestamp_virtual"]
+                "snapshots", ["timestamp", "site_id", "timestamp_virtual", "url_original", "url_snapshot"]
             ),
-            [snapshot.timestamp, site_id, virtual],
+            [snapshot.timestamp, site_id, virtual, snapshot.original, snapshot.url],
             """
                     SELECT id
                     FROM snapshots
