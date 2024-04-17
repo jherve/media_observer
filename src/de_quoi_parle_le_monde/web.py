@@ -49,9 +49,9 @@ async def site_main_article_snapshot(
     [focused_article] = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] == 0
     ]
-    simultaneous_articles = [
+    simultaneous_articles = sorted([
         a for a in main_articles if a["site_id"] != id and a["time_diff"] == 0
-    ]
+    ], key=lambda a: a["site_id"])
     same_site_articles = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] != 0
     ]
@@ -91,12 +91,12 @@ async def site_main_article_snapshot(
             "simultaneous_up": [
                 a
                 for a in simultaneous_articles
-                if a["site_id"] > focused_article["site_id"]
+                if a["site_id"] < focused_article["site_id"]
             ],
             "simultaneous_down": [
                 a
                 for a in simultaneous_articles
-                if a["site_id"] < focused_article["site_id"]
+                if a["site_id"] > focused_article["site_id"]
             ],
             "after": get_article_sibling(
                 same_site_articles,
