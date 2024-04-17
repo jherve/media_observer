@@ -26,7 +26,13 @@
             <p><a href="{{ focused['url_article'] }}">Lien</a></p>
             <ul>
                 {% for s in similar %}
-                    <li>{{ s[1] }} {{ s[0]["title"] }}</li>
+                    <li>{{ s[1] | round(3) }}
+                        {% if s[0]["is_main"] %}
+                            {{ article(s[0]) }}
+                        {% else %}
+                            {{ s[0]["title"] }}
+                        {% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </div>

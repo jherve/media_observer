@@ -362,21 +362,19 @@ class Storage:
 
             return [self._from_row(r, "featured_article_snapshots") for r in rows]
 
-    async def list_featured_article_snapshots(
-        self, featured_article_snapshot_ids: list[int]
-    ):
+    async def list_snapshot_apparitions(self, featured_article_snapshot_ids: list[int]):
         async with self.conn as conn:
             placeholders = ", ".join(["?" for _ in featured_article_snapshot_ids])
             rows = await conn.execute_fetchall(
                 f"""
                     SELECT *
-                    FROM featured_article_snapshots
-                    WHERE id IN ({placeholders})
+                    FROM snapshot_apparitions
+                    WHERE featured_article_snapshot_id IN ({placeholders})
                 """,
                 featured_article_snapshot_ids,
             )
 
-            return [self._from_row(r, "featured_article_snapshots") for r in rows]
+            return [self._from_row(r, "snapshot_apparitions") for r in rows]
 
     @classmethod
     def _from_row(cls, r, table_or_view: str):
