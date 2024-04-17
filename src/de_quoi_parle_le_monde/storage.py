@@ -255,6 +255,28 @@ class Storage:
 
             await conn.execute(
                 """
+                CREATE VIEW IF NOT EXISTS snapshot_apparitions AS
+                    SELECT
+                        sv.id as snapshot_id,
+                        sv.site_id,
+                        sv.site_name,
+                        sv.site_original_url,
+                        sv.timestamp,
+                        sv.timestamp_virtual,
+                        mpa.id AS featured_article_snapshot_id,
+                        mpa.featured_article_id,
+                        mpa.title,
+                        mpa.url_archive,
+                        mpa.url_article,
+                        mpa.main_in_snapshot_id IS NOT NULL AS is_main,
+                        mpa.rank
+                    FROM main_page_apparitions mpa
+                    JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
+                """
+            )
+
+            await conn.execute(
+                """
                 CREATE TABLE IF NOT EXISTS articles_embeddings (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
