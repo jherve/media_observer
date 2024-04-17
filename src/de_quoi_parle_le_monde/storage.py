@@ -195,51 +195,6 @@ class Storage:
 
             await conn.execute(
                 """
-                CREATE VIEW IF NOT EXISTS main_articles_view AS
-                    SELECT
-                        s.id AS snapshot_id,
-                        s.site_id,
-                        s.site_name,
-                        s.site_original_url,
-                        s.timestamp,
-                        s.timestamp_virtual,
-                        fas.id AS featured_article_snapshot_id,
-                        fas.title,
-                        fas.url
-                    FROM
-                        main_articles as m
-                    JOIN
-                        snapshots_view AS s ON s.id = m.snapshot_id
-                    JOIN
-                        featured_article_snapshots AS fas ON m.featured_article_snapshot_id = fas.id
-                """
-            )
-
-            await conn.execute(
-                """
-                CREATE VIEW IF NOT EXISTS top_articles_view AS
-                    SELECT
-                        s.id AS snapshot_id,
-                        s.site_id,
-                        s.site_name,
-                        s.site_original_url,
-                        s.timestamp,
-                        s.timestamp_virtual,
-                        fas.id AS featured_article_snapshot_id,
-                        fas.title,
-                        fas.url,
-                        t.rank
-                    FROM
-                        top_articles as t
-                    JOIN
-                        snapshots_view AS s ON s.id = t.snapshot_id
-                    JOIN
-                        featured_article_snapshots AS fas ON t.featured_article_snapshot_id = fas.id
-                """
-            )
-
-            await conn.execute(
-                """
                 CREATE VIEW IF NOT EXISTS main_page_apparitions AS
                     SELECT
                         fas.id,
