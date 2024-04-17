@@ -42,6 +42,25 @@ class DbConnection:
 
 
 class Storage:
+    columns = {
+        "main_articles_view": [
+            "site_id",
+            "snapshot_id",
+            "site_name",
+            "site_original_url",
+            "timestamp_virtual",
+            "featured_article_snapshot_id",
+            "title",
+            "url",
+        ],
+        "featured_article_snapshots": ["id", "featured_article_id", "title", "url"],
+        "articles_embeddings": [
+            "id",
+            "featured_article_snapshot_id",
+            "title_embedding",
+        ],
+    }
+
     def __init__(self):
         self.conn = DbConnection("test.db")
 
@@ -338,9 +357,11 @@ class Storage:
 
             return [self._from_featured_article_snapshot_row(r) for r in rows]
 
-    @staticmethod
-    def _from_featured_article_snapshot_row(r):
-        return {"id": r[0], "featured_article_id": r[1], "title": r[2], "url": r[3]}
+    @classmethod
+    def _from_featured_article_snapshot_row(cls, r):
+        columns = cls.columns["featured_article_snapshots"]
+
+        return {col: r[idx] for idx, col in enumerate(columns)}
 
     async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
         async with self.conn as conn:
@@ -378,13 +399,14 @@ class Storage:
 
             return [self._from_articles_embeddings_row(r) for r in rows]
 
-    @staticmethod
-    def _from_articles_embeddings_row(r):
-        return {
-            "id": r[0],
-            "featured_article_snapshot_id": r[1],
-            "title_embedding": np.frombuffer(r[2], dtype="float32"),
-        }
+    @classmethod
+    def _from_articles_embeddings_row(cls, r):
+        columns = cls.columns["articles_embeddings"]
+
+        d = {col: r[idx] for idx, col in enumerate(columns)}
+        d.update(title_embedding=np.frombuffer(d["title_embedding"], dtype="float32"))
+
+        return d
 
     async def add_embedding(self, featured_article_snapshot_id: int, embedding):
         async with self.conn as conn:
@@ -483,18 +505,9 @@ class Storage:
                 for a in main_articles
             ]
 
-    @staticmethod
-    def _from_main_article_view_row(r):
-        columns = [
-            "site_id",
-            "snapshot_id",
-            "site_name",
-            "site_original_url",
-            "timestamp_virtual",
-            "featured_article_snapshot_id",
-            "title",
-            "url",
-        ]
+    @classmethod
+    def _from_main_article_view_row(cls, r):
+        columns = cls.columns["main_articles_view"]
 
         return {col: r[idx] for idx, col in enumerate(columns)}
 
