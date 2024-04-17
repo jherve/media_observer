@@ -360,7 +360,7 @@ class Storage:
                 """,
             )
 
-            return [self._from_featured_article_snapshot_row(r) for r in rows]
+            return [self._from_row(r, "featured_article_snapshots") for r in rows]
 
     async def list_featured_article_snapshots(
         self, featured_article_snapshot_ids: list[int]
@@ -376,11 +376,11 @@ class Storage:
                 featured_article_snapshot_ids,
             )
 
-            return [self._from_featured_article_snapshot_row(r) for r in rows]
+            return [self._from_row(r, "featured_article_snapshots") for r in rows]
 
     @classmethod
-    def _from_featured_article_snapshot_row(cls, r):
-        columns = cls.columns["featured_article_snapshots"]
+    def _from_row(cls, r, table_or_view: str):
+        columns = cls.columns[table_or_view]
 
         return {col: r[idx] for idx, col in enumerate(columns)}
 
@@ -422,9 +422,7 @@ class Storage:
 
     @classmethod
     def _from_articles_embeddings_row(cls, r):
-        columns = cls.columns["articles_embeddings"]
-
-        d = {col: r[idx] for idx, col in enumerate(columns)}
+        d = cls._from_row(r, "articles_embeddings")
         d.update(title_embedding=np.frombuffer(d["title_embedding"], dtype="float32"))
 
         return d
@@ -507,15 +505,9 @@ class Storage:
             )
 
             return [
-                self._from_snapshot_apparitions_row(a) | {"time_diff": a[13]}
+                self._from_row(a, "snapshot_apparitions") | {"time_diff": a[13]}
                 for a in main_articles
             ]
-
-    @classmethod
-    def _from_snapshot_apparitions_row(cls, r):
-        columns = cls.columns["snapshot_apparitions"]
-
-        return {col: r[idx] for idx, col in enumerate(columns)}
 
     async def select_from(self, table):
         async with self.conn as conn:
