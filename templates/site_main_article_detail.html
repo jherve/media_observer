@@ -5,7 +5,7 @@
 </head>
 <body>
     <a href="{{ url_for('index') }}">Homepage</a>
-    <h1>Site {{ site_id }}</h1>
+    <h1>{{ focused["site_name"] }}</h1>
 
     {% macro article(a) -%}
         <a href="{{ url_for('site_main_article_snapshot', id=a['site_id'], snapshot_id=a['featured_article_snapshot_id']) }}">
@@ -24,6 +24,7 @@
         <div class="focused">
             <h2>{{ focused["title"] }}</h2>
             <p><a href="{{ focused['url_article'] }}">Lien</a></p>
+            <h3>Articles similaires</h3>
             <ul>
                 {% for s in similar %}
                     <li>{{ s[1] | round(3) }}
