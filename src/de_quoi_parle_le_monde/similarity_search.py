@@ -16,7 +16,7 @@ class SimilaritySearch:
         embeds = await self.storage.list_all_articles_embeddings()
         if not embeds:
             msg = (
-                f"Did not find any embeddings in storage. "
+                "Did not find any embeddings in storage. "
                 "A plausible cause is that they have not been computed yet"
             )
             logger.error(msg)
@@ -48,14 +48,14 @@ class SimilaritySearch:
 
         all_titles = np.array([e["title_embedding"] for e in embeds])
         faiss.normalize_L2(all_titles)
-        D, I = self.index.search(np.array(all_titles), nb_results)
+        scores, indices = self.index.search(np.array(all_titles), nb_results)
 
         return [
             (
                 featured_article_snapshot_ids[idx],
                 [(int(i), d) for d, i in res if score_func(d)],
             )
-            for idx, res in enumerate(np.dstack((D, I)))
+            for idx, res in enumerate(np.dstack((scores, indices)))
         ]
 
     @classmethod

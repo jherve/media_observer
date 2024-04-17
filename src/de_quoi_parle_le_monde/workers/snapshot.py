@@ -108,7 +108,7 @@ class SnapshotWorker:
             main_page = await self.parse(collection, closest)
             await self.store(main_page, collection, dt)
             logger.info(f"Snap for collection {collection.name} @ {dt} is stored")
-        except Exception as e:
+        except Exception:
             return
 
     @staticmethod

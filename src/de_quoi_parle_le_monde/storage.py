@@ -63,7 +63,7 @@ class Storage:
             "url_article",
             "is_main",
             "rank",
-        ]
+        ],
     }
 
     def __init__(self):
@@ -267,7 +267,14 @@ class Storage:
     ) -> int:
         return await self._insert_or_get(
             self._insert_stmt(
-                "snapshots", ["timestamp", "site_id", "timestamp_virtual", "url_original", "url_snapshot"]
+                "snapshots",
+                [
+                    "timestamp",
+                    "site_id",
+                    "timestamp_virtual",
+                    "url_original",
+                    "url_snapshot",
+                ],
             ),
             [snapshot.timestamp, site_id, virtual, snapshot.original, snapshot.url],
             """
@@ -333,7 +340,7 @@ class Storage:
     async def exists_snapshot(self, name: str, dt: datetime):
         async with self.conn as conn:
             exists = await conn.execute_fetchall(
-                f"""
+                """
                     SELECT 1
                     FROM snapshots snap
                     JOIN sites s ON s.id = snap.site_id
@@ -347,7 +354,7 @@ class Storage:
     async def list_all_featured_article_snapshots(self):
         async with self.conn as conn:
             rows = await conn.execute_fetchall(
-                f"""
+                """
                     SELECT *
                     FROM featured_article_snapshots
                 """,
@@ -380,7 +387,7 @@ class Storage:
     async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
         async with self.conn as conn:
             rows = await conn.execute_fetchall(
-                f"""
+                """
                     SELECT featured_article_snapshot_id
                     FROM articles_embeddings
                 """,
@@ -391,7 +398,7 @@ class Storage:
     async def list_all_articles_embeddings(self):
         async with self.conn as conn:
             rows = await conn.execute_fetchall(
-                f"""
+                """
                     SELECT *
                     FROM articles_embeddings
                 """,
