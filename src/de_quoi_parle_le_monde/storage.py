@@ -43,7 +43,13 @@ class DbConnection:
 
 class Storage:
     columns = {
-        "main_articles_view": [
+        "featured_article_snapshots": ["id", "featured_article_id", "title", "url"],
+        "articles_embeddings": [
+            "id",
+            "featured_article_snapshot_id",
+            "title_embedding",
+        ],
+        "snapshot_apparitions": [
             "snapshot_id",
             "site_id",
             "site_name",
@@ -51,15 +57,13 @@ class Storage:
             "timestamp",
             "timestamp_virtual",
             "featured_article_snapshot_id",
+            "featured_article_id",
             "title",
-            "url",
-        ],
-        "featured_article_snapshots": ["id", "featured_article_id", "title", "url"],
-        "articles_embeddings": [
-            "id",
-            "featured_article_snapshot_id",
-            "title_embedding",
-        ],
+            "url_archive",
+            "url_article",
+            "is_main",
+            "rank",
+        ]
     }
 
     def __init__(self):
@@ -489,8 +493,8 @@ class Storage:
                 timestamp_query, timestamp_params = (
                     """
                     SELECT timestamp_virtual
-                    FROM main_articles_view mav
-                    WHERE site_id = ?
+                    FROM snapshot_apparitions sav
+                    WHERE is_main AND site_id = ?
                     ORDER BY timestamp_virtual DESC
                     LIMIT 1
                     """,
@@ -500,8 +504,8 @@ class Storage:
                 timestamp_query, timestamp_params = (
                     """
                     SELECT timestamp_virtual
-                    FROM main_articles_view mav
-                    WHERE site_id = ? AND featured_article_snapshot_id = ?
+                    FROM snapshot_apparitions sav
+                    WHERE is_main AND site_id = ? AND featured_article_snapshot_id = ?
                     """,
                     [site_id, featured_article_snapshot_id],
                 )
@@ -514,25 +518,25 @@ class Storage:
                 f"""
                 WITH original_timestamp AS (
                     {timestamp_query}
-                ), mav_diff AS (
-                    SELECT mav.*, unixepoch(mav.timestamp_virtual) - unixepoch((SELECT * FROM original_timestamp)) AS time_diff
-                    FROM main_articles_view mav
+                ), sav_diff AS (
+                    SELECT sav.*, unixepoch(sav.timestamp_virtual) - unixepoch((SELECT * FROM original_timestamp)) AS time_diff
+                    FROM snapshot_apparitions sav
                 )
                 SELECT * FROM (
-                    SELECT * FROM mav_diff
-                    WHERE time_diff = 0
+                    SELECT * FROM sav_diff
+                    WHERE is_main AND time_diff = 0
                 )
                 UNION ALL
                 SELECT * FROM (
-                    SELECT * FROM mav_diff
-                    WHERE site_id = ? AND time_diff > 0
+                    SELECT * FROM sav_diff
+                    WHERE is_main AND site_id = ? AND time_diff > 0
                     ORDER BY time_diff
                     LIMIT 1
                 )
                 UNION ALL
                 SELECT * FROM (
-                    SELECT * FROM mav_diff
-                    WHERE site_id = ? AND time_diff < 0
+                    SELECT * FROM sav_diff
+                    WHERE is_main AND site_id = ? AND time_diff < 0
                     ORDER BY time_diff DESC
                     LIMIT 1
                 )
@@ -541,13 +545,13 @@ class Storage:
             )
 
             return [
-                self._from_main_article_view_row(a) | {"time_diff": a[9]}
+                self._from_snapshot_apparitions_row(a) | {"time_diff": a[13]}
                 for a in main_articles
             ]
 
     @classmethod
-    def _from_main_article_view_row(cls, r):
-        columns = cls.columns["main_articles_view"]
+    def _from_snapshot_apparitions_row(cls, r):
+        columns = cls.columns["snapshot_apparitions"]
 
         return {col: r[idx] for idx, col in enumerate(columns)}
 
