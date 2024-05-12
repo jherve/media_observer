@@ -595,15 +595,6 @@ class Storage:
                 for a in main_articles
             ]
 
-    async def select_from(self, table):
-        async with self.conn as conn:
-            return await conn.execute_fetchall(
-                f"""
-                    SELECT *
-                    FROM {table}
-                """,
-            )
-
     async def _insert_or_get(
         self,
         insert_stmt: str,
