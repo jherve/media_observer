@@ -67,6 +67,8 @@ click==8.1.7
 dnspython==2.6.1
     # via email-validator
     # via pymongo
+dynaconf==3.2.5
+    # via de-quoi-parle-le-monde
 email-validator==2.1.1
     # via fastapi
 exceptiongroup==1.2.1
