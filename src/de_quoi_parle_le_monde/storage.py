@@ -46,10 +46,16 @@ class DbConnection:
 @frozen
 class UniqueIndex:
     name: str
-    create_stmt: str
+    table: str
+    columns: list[str]
 
     async def create_if_not_exists(self, conn):
-        await conn.execute(self.create_stmt)
+        cols = ",".join(self.columns)
+        stmt = f"""
+            CREATE UNIQUE INDEX IF NOT EXISTS {self.name}
+            ON {self.table} ({cols})
+        """
+        await conn.execute(stmt)
 
 
 @frozen
@@ -81,7 +87,11 @@ class View:
     create_stmt: str
 
     async def create_if_not_exists(self, conn):
-        await conn.execute(self.create_stmt)
+        stmt = f"""
+        CREATE VIEW IF NOT EXISTS {self.name} AS
+        {self.create_stmt}
+        """
+        await conn.execute(stmt)
 
 
 class Storage:
@@ -118,11 +128,9 @@ class Storage:
             """,
             indexes=[
                 UniqueIndex(
-                    "sites_unique_name",
-                    """
-                    CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_name
-                    ON sites (name);
-                """,
+                    name="sites_unique_name",
+                    table="sites",
+                    columns=["name"],
                 )
             ],
         ),
@@ -139,10 +147,8 @@ class Storage:
             indexes=[
                 UniqueIndex(
                     name="snapshots_unique_timestamp_virtual_site_id",
-                    create_stmt="""
-                        CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site_id
-                        ON snapshots (timestamp_virtual, site_id);
-                    """,
+                    table="snapshots",
+                    columns=["timestamp_virtual", "site_id"],
                 )
             ],
         ),
@@ -155,10 +161,8 @@ class Storage:
             indexes=[
                 UniqueIndex(
                     name="featured_articles_unique_url",
-                    create_stmt="""
-                        CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_url
-                        ON featured_articles (url);
-                    """,
+                    table="featured_articles",
+                    columns=["url"],
                 )
             ],
         ),
@@ -173,10 +177,8 @@ class Storage:
             indexes=[
                 UniqueIndex(
                     name="featured_article_snapshots_unique_idx_featured_article_id_url",
-                    create_stmt="""
-                    CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_featured_article_id_url
-                    ON featured_article_snapshots (featured_article_id, url);
-                    """,
+                    table="featured_article_snapshots",
+                    columns=["featured_article_id", "url"],
                 )
             ],
         ),
@@ -190,10 +192,8 @@ class Storage:
             indexes=[
                 UniqueIndex(
                     name="main_articles_unique_idx_snapshot_id",
-                    create_stmt="""
-                        CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_snapshot_id
-                        ON main_articles (snapshot_id);
-                    """,
+                    table="main_articles",
+                    columns=["snapshot_id"],
                 )
             ],
         ),
@@ -208,10 +208,8 @@ class Storage:
             indexes=[
                 UniqueIndex(
                     name="top_articles_unique_idx_snapshot_id_rank",
-                    create_stmt="""
-                    CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_snapshot_id_rank
-                    ON top_articles (snapshot_id, rank);
-                    """,
+                    table="top_articles",
+                    columns=["snapshot_id", "rank"],
                 )
             ],
         ),
@@ -224,11 +222,9 @@ class Storage:
                 """,
             indexes=[
                 UniqueIndex(
-                    name="",
-                    create_stmt="""
-                        CREATE UNIQUE INDEX IF NOT EXISTS articles_embeddings_unique_idx_featured_article_snapshot_id
-                        ON articles_embeddings (featured_article_snapshot_id);
-                    """,
+                    name="articles_embeddings_unique_idx_featured_article_snapshot_id",
+                    table="articles_embeddings",
+                    columns=["featured_article_snapshot_id"],
                 )
             ],
         ),
@@ -237,59 +233,56 @@ class Storage:
         View(
             name="snapshots_view",
             create_stmt="""
-                CREATE VIEW IF NOT EXISTS snapshots_view AS
-                    SELECT
-                        s.id,
-                        si.id AS site_id,
-                        si.name AS site_name,
-                        si.original_url AS site_original_url,
-                        s.timestamp,
-                        s.timestamp_virtual
-                    FROM
-                        snapshots AS s
-                    JOIN
-                        sites AS si ON si.id = s.site_id
+                SELECT
+                    s.id,
+                    si.id AS site_id,
+                    si.name AS site_name,
+                    si.original_url AS site_original_url,
+                    s.timestamp,
+                    s.timestamp_virtual
+                FROM
+                    snapshots AS s
+                JOIN
+                    sites AS si ON si.id = s.site_id
                 """,
         ),
         View(
             name="main_page_apparitions",
             create_stmt="""
-                CREATE VIEW IF NOT EXISTS main_page_apparitions AS
-                    SELECT
-                        fas.id,
-                        fas.featured_article_id,
-                        fas.title,
-                        fas.url AS url_archive,
-                        fa.url AS url_article,
-                        m.snapshot_id AS main_in_snapshot_id,
-                        t.snapshot_id AS top_in_snapshot_id,
-                        t.rank
-                    FROM featured_article_snapshots fas
-                    JOIN featured_articles fa ON fa.id = fas.featured_article_id
-                    LEFT JOIN main_articles m ON m.featured_article_snapshot_id = fas.id
-                    LEFT JOIN top_articles t ON t.featured_article_snapshot_id = fas.id
+                SELECT
+                    fas.id,
+                    fas.featured_article_id,
+                    fas.title,
+                    fas.url AS url_archive,
+                    fa.url AS url_article,
+                    m.snapshot_id AS main_in_snapshot_id,
+                    t.snapshot_id AS top_in_snapshot_id,
+                    t.rank
+                FROM featured_article_snapshots fas
+                JOIN featured_articles fa ON fa.id = fas.featured_article_id
+                LEFT JOIN main_articles m ON m.featured_article_snapshot_id = fas.id
+                LEFT JOIN top_articles t ON t.featured_article_snapshot_id = fas.id
                 """,
         ),
         View(
             name="snapshot_apparitions",
             create_stmt="""
-                CREATE VIEW IF NOT EXISTS snapshot_apparitions AS
-                    SELECT
-                        sv.id as snapshot_id,
-                        sv.site_id,
-                        sv.site_name,
-                        sv.site_original_url,
-                        sv.timestamp,
-                        sv.timestamp_virtual,
-                        mpa.id AS featured_article_snapshot_id,
-                        mpa.featured_article_id,
-                        mpa.title,
-                        mpa.url_archive,
-                        mpa.url_article,
-                        mpa.main_in_snapshot_id IS NOT NULL AS is_main,
-                        mpa.rank
-                    FROM main_page_apparitions mpa
-                    JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
+                SELECT
+                    sv.id as snapshot_id,
+                    sv.site_id,
+                    sv.site_name,
+                    sv.site_original_url,
+                    sv.timestamp,
+                    sv.timestamp_virtual,
+                    mpa.id AS featured_article_snapshot_id,
+                    mpa.featured_article_id,
+                    mpa.title,
+                    mpa.url_archive,
+                    mpa.url_article,
+                    mpa.main_in_snapshot_id IS NOT NULL AS is_main,
+                    mpa.rank
+                FROM main_page_apparitions mpa
+                JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
                 """,
         ),
     ]
