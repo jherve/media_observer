@@ -195,6 +195,8 @@ platformdirs==4.2.1
     # via requests-cache
 priority==2.0.0
     # via hypercorn
+protobuf==5.26.1
+    # via de-quoi-parle-le-monde
 pydantic==2.7.1
     # via fastapi
 pydantic-core==2.18.2
@@ -238,6 +240,8 @@ scipy==1.10.1
     # via scikit-learn
     # via sentence-transformers
 sentence-transformers==2.7.0
+    # via de-quoi-parle-le-monde
+sentencepiece==0.2.0
     # via de-quoi-parle-le-monde
 shellingham==1.5.4
     # via typer
