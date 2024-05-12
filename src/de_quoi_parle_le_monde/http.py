@@ -16,8 +16,8 @@ class SemaphoreMixin:
 
 class RateLimiterMixin:
     async def _request(self, *args, **kwargs):
-        await self.limiter.acquire()
-        return await super()._request(*args, **kwargs)
+        async with self.limiter:
+            return await super()._request(*args, **kwargs)
 
 
 @define
