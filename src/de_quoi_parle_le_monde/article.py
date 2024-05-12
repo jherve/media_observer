@@ -58,13 +58,11 @@ class MainPage(ABC):
 
     @staticmethod
     @abstractmethod
-    def get_top_articles(soup: BeautifulSoup) -> list[TopArticle]:
-        ...
+    def get_top_articles(soup: BeautifulSoup) -> list[TopArticle]: ...
 
     @staticmethod
     @abstractmethod
-    def get_main_article(soup: BeautifulSoup) -> MainArticle:
-        ...
+    def get_main_article(soup: BeautifulSoup) -> MainArticle: ...
 
     @classmethod
     async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):

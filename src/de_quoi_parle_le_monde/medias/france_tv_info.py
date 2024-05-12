@@ -7,8 +7,7 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class FranceTvInfoFeaturedArticleSnapshot(FeaturedArticleSnapshot):
-    ...
+class FranceTvInfoFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
 
 
 class FranceTvInfoMainPage(MainPage):

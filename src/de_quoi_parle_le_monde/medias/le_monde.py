@@ -7,8 +7,7 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class LeMondeFeaturedArticleSnapshot(FeaturedArticleSnapshot):
-    ...
+class LeMondeFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
 
 
 class LeMondeMainPage(MainPage):

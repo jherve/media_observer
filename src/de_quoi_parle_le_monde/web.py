@@ -49,9 +49,10 @@ async def site_main_article_snapshot(
     [focused_article] = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] == 0
     ]
-    simultaneous_articles = sorted([
-        a for a in main_articles if a["site_id"] != id and a["time_diff"] == 0
-    ], key=lambda a: a["site_id"])
+    simultaneous_articles = sorted(
+        [a for a in main_articles if a["site_id"] != id and a["time_diff"] == 0],
+        key=lambda a: a["site_id"],
+    )
     same_site_articles = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] != 0
     ]

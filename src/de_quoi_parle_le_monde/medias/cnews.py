@@ -9,8 +9,7 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class CNewsFeaturedArticleSnapshot(FeaturedArticleSnapshot):
-    ...
+class CNewsFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
 
 
 class CNewsMainPage(MainPage):

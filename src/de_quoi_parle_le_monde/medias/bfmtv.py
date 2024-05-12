@@ -7,8 +7,7 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class BfmTvFeaturedArticleSnapshot(FeaturedArticleSnapshot):
-    ...
+class BfmTvFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
 
 
 class BfmTvMainPage(MainPage):
