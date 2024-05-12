@@ -5,7 +5,6 @@ from attrs import frozen
 
 from de_quoi_parle_le_monde.http import HttpClient
 from de_quoi_parle_le_monde.storage import Storage
-from de_quoi_parle_le_monde.workers.snapshot import SnapshotJob, SnapshotWorker
 from de_quoi_parle_le_monde.workers.embeddings import (
     EmbeddingsJob,
     EmbeddingsWorker,
@@ -21,20 +20,10 @@ class Application:
 
     async def run(self):
         await asyncio.gather(
-            self._run_snapshot_worker(),
             self._run_similarity_index(),
             self._run_embeddings_worker(),
         )
         logger.info("Will quit now..")
-
-    async def _run_snapshot_worker(self):
-        logger.info("Starting snapshot service..")
-        jobs = SnapshotJob.create(10, [8, 12, 18, 22])
-
-        async with self.http_client.session() as session:
-            worker = SnapshotWorker.create(self.storage, session)
-            await asyncio.gather(*[worker.run(job) for job in jobs])
-        logger.info("Snapshot service exiting")
 
     async def _run_embeddings_worker(self):
         logger.info("Starting embeddings service..")
