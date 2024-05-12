@@ -113,11 +113,6 @@ class SnapshotWorker:
         except Exception:
             return
 
-    @staticmethod
-    def create(storage: Storage, session: HttpSession):
-        ia = InternetArchiveClient(session)
-        return SnapshotWorker(storage, ia)
-
 
 async def main():
     http_client = HttpClient()
@@ -127,7 +122,8 @@ async def main():
     jobs = SnapshotJob.create(10, [8, 12, 18, 22])
 
     async with http_client.session() as session:
-        worker = SnapshotWorker.create(storage, session)
+        ia = InternetArchiveClient(session)
+        worker = SnapshotWorker(storage, ia)
         await asyncio.gather(*[worker.run(job) for job in jobs])
     logger.info("Snapshot service exiting")
 
