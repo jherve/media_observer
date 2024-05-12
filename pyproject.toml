@@ -44,3 +44,5 @@ allow-direct-references = true
 [tool.hatch.build.targets.wheel]
 packages = ["src/de_quoi_parle_le_monde"]
 
+[tool.rye.scripts]
+web_server = {cmd = "hypercorn de_quoi_parle_le_monde.web:app"}
