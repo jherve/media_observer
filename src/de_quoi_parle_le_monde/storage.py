@@ -67,13 +67,14 @@ class Column:
 @frozen
 class Table:
     name: str
-    create_stmt: str
+    columns: list[Column]
     indexes: list[UniqueIndex]
 
     async def create_if_not_exists(self, conn):
+        cols = ",\n".join([f"{c.name} {c.attrs}" for c in self.columns])
         await conn.execute(f"""
                 CREATE TABLE IF NOT EXISTS {self.name} (
-                    {self.create_stmt}
+                    {cols}
                 )
             """)
 
@@ -121,11 +122,11 @@ class Storage:
     tables = [
         Table(
             name="sites",
-            create_stmt="""
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    name TEXT,
-                    original_url TEXT
-            """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="name", attrs="TEXT"),
+                Column(name="original_url", attrs="TEXT"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="sites_unique_name",
@@ -136,14 +137,17 @@ class Storage:
         ),
         Table(
             name="snapshots",
-            create_stmt="""
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                site_id INTEGER REFERENCES sites (id) ON DELETE CASCADE,
-                timestamp TEXT,
-                timestamp_virtual TEXT,
-                url_original TEXT,
-                url_snapshot TEXT
-            """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(
+                    name="site_id",
+                    attrs="INTEGER REFERENCES sites (id) ON DELETE CASCADE",
+                ),
+                Column(name="timestamp", attrs="TEXT"),
+                Column(name="timestamp_virtual", attrs="TEXT"),
+                Column(name="url_original", attrs="TEXT"),
+                Column(name="url_snapshot", attrs="TEXT"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="snapshots_unique_timestamp_virtual_site_id",
@@ -154,10 +158,10 @@ class Storage:
         ),
         Table(
             name="featured_articles",
-            create_stmt="""
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    url TEXT
-                """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="url", attrs="TEXT"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="featured_articles_unique_url",
@@ -168,12 +172,15 @@ class Storage:
         ),
         Table(
             name="featured_article_snapshots",
-            create_stmt="""
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE,
-                    title TEXT,
-                    url TEXT
-                """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(
+                    name="featured_article_id",
+                    attrs="INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE",
+                ),
+                Column(name="title", attrs="TEXT"),
+                Column(name="url", attrs="TEXT"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="featured_article_snapshots_unique_idx_featured_article_id_url",
@@ -184,11 +191,17 @@ class Storage:
         ),
         Table(
             name="main_articles",
-            create_stmt="""
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE
-            """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(
+                    name="snapshot_id",
+                    attrs="INTEGER REFERENCES snapshots (id) ON DELETE CASCADE",
+                ),
+                Column(
+                    name="featured_article_snapshot_id",
+                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                ),
+            ],
             indexes=[
                 UniqueIndex(
                     name="main_articles_unique_idx_snapshot_id",
@@ -199,12 +212,18 @@ class Storage:
         ),
         Table(
             name="top_articles",
-            create_stmt="""
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
-                    rank INTEGER
-                """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(
+                    name="snapshot_id",
+                    attrs="INTEGER REFERENCES snapshots (id) ON DELETE CASCADE",
+                ),
+                Column(
+                    name="featured_article_snapshot_id",
+                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                ),
+                Column(name="rank", attrs="INTEGER"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="top_articles_unique_idx_snapshot_id_rank",
@@ -215,11 +234,14 @@ class Storage:
         ),
         Table(
             name="articles_embeddings",
-            create_stmt="""
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
-                    title_embedding BLOB
-                """,
+            columns=[
+                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(
+                    name="featured_article_snapshot_id",
+                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                ),
+                Column(name="title_embedding", attrs="BLOB"),
+            ],
             indexes=[
                 UniqueIndex(
                     name="articles_embeddings_unique_idx_featured_article_snapshot_id",
