@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 import numpy as np
 
+from config import settings
 from de_quoi_parle_le_monde.article import (
     TopArticle,
     FeaturedArticleSnapshot,
@@ -67,7 +68,7 @@ class Storage:
     }
 
     def __init__(self):
-        self.conn = DbConnection("test.db")
+        self.conn = DbConnection(settings.database_url)
 
     @staticmethod
     async def create():
