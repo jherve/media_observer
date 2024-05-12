@@ -1,7 +1,11 @@
+import asyncio
 from typing import Callable
 from loguru import logger
 import faiss
 import numpy as np
+
+
+from de_quoi_parle_le_monde.storage import Storage
 
 
 class SimilaritySearch:
@@ -64,3 +68,19 @@ class SimilaritySearch:
             cls.instance = SimilaritySearch(storage)
 
         return cls.instance
+
+
+async def main():
+    storage = await Storage.create()
+    sim_index = SimilaritySearch.create(storage)
+
+    logger.info("Starting index..")
+    try:
+        await sim_index.add_embeddings()
+        logger.info("Similarity index ready")
+    except ValueError:
+        ...
+
+
+if __name__ == "__main__":
+    asyncio.run(main())

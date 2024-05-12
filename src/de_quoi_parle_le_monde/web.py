@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
-from de_quoi_parle_le_monde.similarity_search import SimilaritySearch
+from de_quoi_parle_le_monde.similarity_index import SimilaritySearch
 
 
 app = FastAPI()

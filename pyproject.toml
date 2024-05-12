@@ -48,3 +48,4 @@ packages = ["src/de_quoi_parle_le_monde"]
 web_server = {cmd = "hypercorn de_quoi_parle_le_monde.web:app"}
 snapshots = {call = "de_quoi_parle_le_monde.snapshots"}
 embeddings = {call = "de_quoi_parle_le_monde.embeddings"}
+similarity_index = {call = "de_quoi_parle_le_monde.similarity_index"}
