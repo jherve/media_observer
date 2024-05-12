@@ -3,6 +3,7 @@ import aiosqlite
 import asyncio
 from datetime import datetime
 import numpy as np
+from attrs import frozen
 
 from config import settings
 from de_quoi_parle_le_monde.article import (
@@ -42,6 +43,47 @@ class DbConnection:
         return await self.conn.commit()
 
 
+@frozen
+class UniqueIndex:
+    name: str
+    create_stmt: str
+
+    async def create_if_not_exists(self, conn):
+        await conn.execute(self.create_stmt)
+
+
+@frozen
+class Column:
+    name: str
+    attrs: str
+
+
+@frozen
+class Table:
+    name: str
+    create_stmt: str
+    indexes: list[UniqueIndex]
+
+    async def create_if_not_exists(self, conn):
+        await conn.execute(f"""
+                CREATE TABLE IF NOT EXISTS {self.name} (
+                    {self.create_stmt}
+                )
+            """)
+
+        for i in self.indexes:
+            await i.create_if_not_exists(conn)
+
+
+@frozen
+class View:
+    name: str
+    create_stmt: str
+
+    async def create_if_not_exists(self, conn):
+        await conn.execute(self.create_stmt)
+
+
 class Storage:
     columns = {
         "featured_article_snapshots": ["id", "featured_article_id", "title", "url"],
@@ -66,119 +108,135 @@ class Storage:
             "rank",
         ],
     }
-
-    def __init__(self):
-        self.conn = DbConnection(settings.database_url)
-
-    @staticmethod
-    async def create():
-        storage = Storage()
-        await storage._create_db()
-        return storage
-
-    async def _create_db(self):
-        async with self.conn as conn:
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS sites (
+    tables = [
+        Table(
+            name="sites",
+            create_stmt="""
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT,
                     original_url TEXT
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_name
-                ON sites (name);
-                """
-            )
-
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS snapshots (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    site_id INTEGER REFERENCES sites (id) ON DELETE CASCADE,
-                    timestamp TEXT,
-                    timestamp_virtual TEXT,
-                    url_original TEXT,
-                    url_snapshot TEXT
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site_id
-                ON snapshots (timestamp_virtual, site_id);
-                """
-            )
-
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS featured_articles (
+            """,
+            indexes=[
+                UniqueIndex(
+                    "sites_unique_name",
+                    """
+                    CREATE UNIQUE INDEX IF NOT EXISTS sites_unique_name
+                    ON sites (name);
+                """,
+                )
+            ],
+        ),
+        Table(
+            name="snapshots",
+            create_stmt="""
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                site_id INTEGER REFERENCES sites (id) ON DELETE CASCADE,
+                timestamp TEXT,
+                timestamp_virtual TEXT,
+                url_original TEXT,
+                url_snapshot TEXT
+            """,
+            indexes=[
+                UniqueIndex(
+                    name="snapshots_unique_timestamp_virtual_site_id",
+                    create_stmt="""
+                        CREATE UNIQUE INDEX IF NOT EXISTS snapshots_unique_timestamp_virtual_site_id
+                        ON snapshots (timestamp_virtual, site_id);
+                    """,
+                )
+            ],
+        ),
+        Table(
+            name="featured_articles",
+            create_stmt="""
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     url TEXT
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_url
-                ON featured_articles (url);
-                """
-            )
-
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS featured_article_snapshots (
+                """,
+            indexes=[
+                UniqueIndex(
+                    name="featured_articles_unique_url",
+                    create_stmt="""
+                        CREATE UNIQUE INDEX IF NOT EXISTS featured_articles_unique_url
+                        ON featured_articles (url);
+                    """,
+                )
+            ],
+        ),
+        Table(
+            name="featured_article_snapshots",
+            create_stmt="""
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     featured_article_id INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE,
                     title TEXT,
                     url TEXT
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_featured_article_id_url
-                ON featured_article_snapshots (featured_article_id, url);
-                """
-            )
-
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS main_articles (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
-                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_snapshot_id
-                ON main_articles (snapshot_id);
-            """
-            )
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS top_articles (
+                """,
+            indexes=[
+                UniqueIndex(
+                    name="featured_article_snapshots_unique_idx_featured_article_id_url",
+                    create_stmt="""
+                    CREATE UNIQUE INDEX IF NOT EXISTS featured_article_snapshots_unique_idx_featured_article_id_url
+                    ON featured_article_snapshots (featured_article_id, url);
+                    """,
+                )
+            ],
+        ),
+        Table(
+            name="main_articles",
+            create_stmt="""
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
+                featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE
+            """,
+            indexes=[
+                UniqueIndex(
+                    name="main_articles_unique_idx_snapshot_id",
+                    create_stmt="""
+                        CREATE UNIQUE INDEX IF NOT EXISTS main_articles_unique_idx_snapshot_id
+                        ON main_articles (snapshot_id);
+                    """,
+                )
+            ],
+        ),
+        Table(
+            name="top_articles",
+            create_stmt="""
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     snapshot_id INTEGER REFERENCES snapshots (id) ON DELETE CASCADE,
                     featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
                     rank INTEGER
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_snapshot_id_rank
-                ON top_articles (snapshot_id, rank);
-                """
-            )
-
-            await conn.execute(
-                """
+                """,
+            indexes=[
+                UniqueIndex(
+                    name="top_articles_unique_idx_snapshot_id_rank",
+                    create_stmt="""
+                    CREATE UNIQUE INDEX IF NOT EXISTS top_articles_unique_idx_snapshot_id_rank
+                    ON top_articles (snapshot_id, rank);
+                    """,
+                )
+            ],
+        ),
+        Table(
+            name="articles_embeddings",
+            create_stmt="""
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
+                    title_embedding BLOB
+                """,
+            indexes=[
+                UniqueIndex(
+                    name="",
+                    create_stmt="""
+                        CREATE UNIQUE INDEX IF NOT EXISTS articles_embeddings_unique_idx_featured_article_snapshot_id
+                        ON articles_embeddings (featured_article_snapshot_id);
+                    """,
+                )
+            ],
+        ),
+    ]
+    views = [
+        View(
+            name="snapshots_view",
+            create_stmt="""
                 CREATE VIEW IF NOT EXISTS snapshots_view AS
                     SELECT
                         s.id,
@@ -191,11 +249,11 @@ class Storage:
                         snapshots AS s
                     JOIN
                         sites AS si ON si.id = s.site_id
-                """
-            )
-
-            await conn.execute(
-                """
+                """,
+        ),
+        View(
+            name="main_page_apparitions",
+            create_stmt="""
                 CREATE VIEW IF NOT EXISTS main_page_apparitions AS
                     SELECT
                         fas.id,
@@ -210,11 +268,11 @@ class Storage:
                     JOIN featured_articles fa ON fa.id = fas.featured_article_id
                     LEFT JOIN main_articles m ON m.featured_article_snapshot_id = fas.id
                     LEFT JOIN top_articles t ON t.featured_article_snapshot_id = fas.id
-                """
-            )
-
-            await conn.execute(
-                """
+                """,
+        ),
+        View(
+            name="snapshot_apparitions",
+            create_stmt="""
                 CREATE VIEW IF NOT EXISTS snapshot_apparitions AS
                     SELECT
                         sv.id as snapshot_id,
@@ -232,24 +290,26 @@ class Storage:
                         mpa.rank
                     FROM main_page_apparitions mpa
                     JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
-                """
-            )
+                """,
+        ),
+    ]
 
-            await conn.execute(
-                """
-                CREATE TABLE IF NOT EXISTS articles_embeddings (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    featured_article_snapshot_id INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE,
-                    title_embedding BLOB
-                );
-                """
-            )
-            await conn.execute(
-                """
-                CREATE UNIQUE INDEX IF NOT EXISTS articles_embeddings_unique_idx_featured_article_snapshot_id
-                ON articles_embeddings (featured_article_snapshot_id);
-            """
-            )
+    def __init__(self):
+        self.conn = DbConnection(settings.database_url)
+
+    @staticmethod
+    async def create():
+        storage = Storage()
+        await storage._create_db()
+        return storage
+
+    async def _create_db(self):
+        async with self.conn as conn:
+            for t in self.tables:
+                await t.create_if_not_exists(conn)
+
+            for v in self.views:
+                await v.create_if_not_exists(conn)
 
     async def add_site(self, name: str, original_url: str) -> int:
         return await self._insert_or_get(
