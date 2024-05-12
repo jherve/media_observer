@@ -68,7 +68,6 @@ class Column:
 class Table:
     name: str
     columns: list[Column]
-    indexes: list[UniqueIndex]
 
     @property
     def column_names(self):
@@ -81,9 +80,6 @@ class Table:
                     {cols}
                 )
             """)
-
-        for i in self.indexes:
-            await i.create_if_not_exists(conn)
 
 
 @frozen
@@ -109,13 +105,6 @@ class Storage:
                 Column(name="name", attrs="TEXT"),
                 Column(name="original_url", attrs="TEXT"),
             ],
-            indexes=[
-                UniqueIndex(
-                    name="sites_unique_name",
-                    table="sites",
-                    columns=["name"],
-                )
-            ],
         ),
         Table(
             name="snapshots",
@@ -130,26 +119,12 @@ class Storage:
                 Column(name="url_original", attrs="TEXT"),
                 Column(name="url_snapshot", attrs="TEXT"),
             ],
-            indexes=[
-                UniqueIndex(
-                    name="snapshots_unique_timestamp_virtual_site_id",
-                    table="snapshots",
-                    columns=["timestamp_virtual", "site_id"],
-                )
-            ],
         ),
         Table(
             name="featured_articles",
             columns=[
                 Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
                 Column(name="url", attrs="TEXT"),
-            ],
-            indexes=[
-                UniqueIndex(
-                    name="featured_articles_unique_url",
-                    table="featured_articles",
-                    columns=["url"],
-                )
             ],
         ),
         Table(
@@ -162,13 +137,6 @@ class Storage:
                 ),
                 Column(name="title", attrs="TEXT"),
                 Column(name="url", attrs="TEXT"),
-            ],
-            indexes=[
-                UniqueIndex(
-                    name="featured_article_snapshots_unique_idx_featured_article_id_url",
-                    table="featured_article_snapshots",
-                    columns=["featured_article_id", "url"],
-                )
             ],
         ),
         Table(
@@ -183,13 +151,6 @@ class Storage:
                     name="featured_article_snapshot_id",
                     attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
                 ),
-            ],
-            indexes=[
-                UniqueIndex(
-                    name="main_articles_unique_idx_snapshot_id",
-                    table="main_articles",
-                    columns=["snapshot_id"],
-                )
             ],
         ),
         Table(
@@ -206,13 +167,6 @@ class Storage:
                 ),
                 Column(name="rank", attrs="INTEGER"),
             ],
-            indexes=[
-                UniqueIndex(
-                    name="top_articles_unique_idx_snapshot_id_rank",
-                    table="top_articles",
-                    columns=["snapshot_id", "rank"],
-                )
-            ],
         ),
         Table(
             name="articles_embeddings",
@@ -224,15 +178,9 @@ class Storage:
                 ),
                 Column(name="title_embedding", attrs="BLOB"),
             ],
-            indexes=[
-                UniqueIndex(
-                    name="articles_embeddings_unique_idx_featured_article_snapshot_id",
-                    table="articles_embeddings",
-                    columns=["featured_article_snapshot_id"],
-                )
-            ],
         ),
     ]
+
     views = [
         View(
             name="snapshots_view",
@@ -324,6 +272,44 @@ class Storage:
         ),
     ]
 
+    indexes = [
+        UniqueIndex(
+            name="sites_unique_name",
+            table="sites",
+            columns=["name"],
+        ),
+        UniqueIndex(
+            name="snapshots_unique_timestamp_virtual_site_id",
+            table="snapshots",
+            columns=["timestamp_virtual", "site_id"],
+        ),
+        UniqueIndex(
+            name="main_articles_unique_idx_snapshot_id",
+            table="main_articles",
+            columns=["snapshot_id"],
+        ),
+        UniqueIndex(
+            name="featured_articles_unique_url",
+            table="featured_articles",
+            columns=["url"],
+        ),
+        UniqueIndex(
+            name="featured_article_snapshots_unique_idx_featured_article_id_url",
+            table="featured_article_snapshots",
+            columns=["featured_article_id", "url"],
+        ),
+        UniqueIndex(
+            name="top_articles_unique_idx_snapshot_id_rank",
+            table="top_articles",
+            columns=["snapshot_id", "rank"],
+        ),
+        UniqueIndex(
+            name="articles_embeddings_unique_idx_featured_article_snapshot_id",
+            table="articles_embeddings",
+            columns=["featured_article_snapshot_id"],
+        ),
+    ]
+
     def __init__(self):
         self.conn = DbConnection(settings.database_url)
 
@@ -337,6 +323,9 @@ class Storage:
         async with self.conn as conn:
             for t in self.tables:
                 await t.create_if_not_exists(conn)
+
+            for i in self.indexes:
+                await i.create_if_not_exists(conn)
 
             for v in self.views:
                 await v.create_if_not_exists(conn)
