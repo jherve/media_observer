@@ -5,6 +5,7 @@ from collections import defaultdict
 from typing import Any
 from attrs import frozen
 from numpy.typing import NDArray
+from sentence_transformers import SentenceTransformer
 
 from de_quoi_parle_le_monde.storage import Storage
 
@@ -78,8 +79,6 @@ class EmbeddingsWorker:
 
     @staticmethod
     def create(storage, model_path):
-        from sentence_transformers import SentenceTransformer
-
         model = SentenceTransformer(model_path)
         return EmbeddingsWorker(storage, model)
 
