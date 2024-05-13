@@ -25,6 +25,7 @@ dependencies = [
     "sentencepiece>=0.2.0",
     "protobuf>=5.26.1",
     "dynaconf>=3.2.5",
+    "packaging>=24.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.10"
@@ -49,7 +50,7 @@ allow-direct-references = true
 packages = ["src/de_quoi_parle_le_monde"]
 
 [tool.rye.scripts]
-web_server = {cmd = "hypercorn de_quoi_parle_le_monde.web:app"}
+web_server = {cmd = "hypercorn --bind '0.0.0.0:8000' de_quoi_parle_le_monde.web:app"}
 snapshots = {call = "de_quoi_parle_le_monde.snapshots"}
 embeddings = {call = "de_quoi_parle_le_monde.embeddings"}
 similarity_index = {call = "de_quoi_parle_le_monde.similarity_index"}

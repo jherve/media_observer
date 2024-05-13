@@ -137,6 +137,8 @@ numpy==1.26.4
     # via faiss-cpu
 orjson==3.10.3
     # via fastapi
+packaging==24.0
+    # via de-quoi-parle-le-monde
 platformdirs==4.2.1
     # via requests-cache
 priority==2.0.0
