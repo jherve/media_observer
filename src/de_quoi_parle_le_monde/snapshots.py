@@ -121,9 +121,10 @@ async def main():
     logger.info("Starting snapshot service..")
     jobs = SnapshotJob.create(10, [8, 12, 18, 22])
 
-    ia = InternetArchiveClient(http_client)
-    worker = SnapshotWorker(storage, ia)
-    await asyncio.gather(*[worker.run(job) for job in jobs])
+    async with http_client.session() as session:
+        ia = InternetArchiveClient(session)
+        worker = SnapshotWorker(storage, ia)
+        await asyncio.gather(*[worker.run(job) for job in jobs])
     logger.info("Snapshot service exiting")
 
 
