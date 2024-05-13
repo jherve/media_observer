@@ -1,1 +1,1 @@
-database_url="test.db"
+database_url="sqlite:///test.db"

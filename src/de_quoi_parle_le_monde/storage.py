@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 import numpy as np
 from attrs import frozen
+from yarl import URL
 
 from config import settings
 from de_quoi_parle_le_monde.article import (
@@ -311,7 +312,17 @@ class Storage:
     ]
 
     def __init__(self):
-        self.conn = DbConnection(settings.database_url)
+        # We try to reproduce the scheme used by SQLAlchemy for Database-URLs
+        # https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls
+        conn_url = URL(settings.database_url)
+
+        if conn_url.scheme == "sqlite":
+            if conn_url.path.startswith("//"):
+                raise ValueError("Absolute URLs not supported for sqlite")
+            elif conn_url.path.startswith("/"):
+                self.conn = DbConnection(conn_url.path[1:])
+        else:
+            raise ValueError("Only the SQLite backend is supported")
 
     @staticmethod
     async def create():
