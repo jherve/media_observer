@@ -38,6 +38,7 @@ class HttpSession:
 
     async def get(self, url, params=None):
         async with self.session.get(url, allow_redirects=True, params=params) as resp:
+            resp.raise_for_status()
             return await resp.text()
 
     async def __aenter__(self):
