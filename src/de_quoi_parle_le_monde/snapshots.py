@@ -1,5 +1,8 @@
 import asyncio
 import traceback
+import tempfile
+import urllib.parse
+from pathlib import Path
 from datetime import date, datetime, time, timedelta
 from attrs import frozen
 from loguru import logger
@@ -64,8 +67,22 @@ class SnapshotWorker:
         try:
             return await collection.MainPageClass.from_snapshot(snapshot)
         except Exception as e:
-            logger.error(f"Error while parsing {snapshot}")
-            traceback.print_exception(e)
+            tmpdir_prefix = urllib.parse.quote_plus(
+                f"le_monde_{snapshot.id.original}_{snapshot.id.timestamp}"
+            )
+            tmpdir = Path(tempfile.mkdtemp(prefix=tmpdir_prefix))
+
+            with open(tmpdir / "snapshot.html", "w") as f:
+                f.write(snapshot.text)
+            with open(tmpdir / "exception.txt", "w") as f:
+                f.writelines(traceback.format_exception(e))
+            with open(tmpdir / "url.txt", "w") as f:
+                f.write(snapshot.id.url)
+
+            logger.error(
+                f"Error while parsing snapshot from {snapshot.id.url}, details were written in directory {tmpdir}"
+            )
+
             raise e
 
     async def store(self, page, collection, dt):
