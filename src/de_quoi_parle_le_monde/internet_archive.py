@@ -125,6 +125,8 @@ class InternetArchiveClient:
             # of the HTTP layer that this client should not be aware of..
             to_=min(dt + timedelta(hours=6.0), datetime.now()),
             filter="statuscode:200",
+            # Just to be safe, add an arbitrary limit to the number of values returned
+            limit=100,
         )
 
         all_snaps = await self.search_snapshots(req)
