@@ -1,8 +1,16 @@
+import pickle
+from pathlib import Path
 from attrs import frozen, field
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
+from loguru import logger
 import cattrs
-from aiohttp.client import ClientSession, TCPConnector
+from aiohttp.client import (
+    ClientSession,
+    TCPConnector,
+    ClientResponseError,
+    ClientConnectorError,
+)
 from aiolimiter import AsyncLimiter
 
 from config import settings
@@ -109,9 +117,51 @@ class RateLimitedConnector(TCPConnector):
 
 
 @frozen
+class ErrorRateLimiter:
+    name: str
+    file_path: Path
+    relaxation_duration: timedelta
+
+    def notify(self):
+        with open(self.file_path, "wb") as f:
+            pickle.dump(datetime.now(), f)
+
+    def raise_if_not_relaxed(self):
+        time_to_relaxation_end = self._delay_since_last_error - self.relaxation_duration
+        if time_to_relaxation_end < timedelta(0):
+            raise RuntimeError(
+                "Relaxation duration not yet elapsed after last "
+                f"error '{self.name}' that occurred {self._delay_since_last_error} ago"
+                f"\nPlease wait another {-time_to_relaxation_end}"
+            )
+
+    @property
+    def _delay_since_last_error(self):
+        try:
+            with open(self.file_path, "rb") as f:
+                last_error_dt = pickle.load(f)
+        except FileNotFoundError:
+            last_error_dt = datetime.min
+
+        return datetime.now() - last_error_dt
+
+
+@frozen
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
     session: ClientSession
+    error_429_rate_limiter: ClassVar[ErrorRateLimiter] = ErrorRateLimiter(
+        "429 HTTP",
+        Path("./error_file_429.pickle"),
+        timedelta(seconds=settings.internet_archive.relaxation_time_after_error_429),
+    )
+    error_connect_rate_limiter: ClassVar[ErrorRateLimiter] = ErrorRateLimiter(
+        "Connection",
+        Path("./error_file_connect.pickle"),
+        timedelta(
+            seconds=settings.internet_archive.relaxation_time_after_error_connect
+        ),
+    )
     search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
     async def search_snapshots(
@@ -158,9 +208,23 @@ class InternetArchiveClient:
         return await self.session.__aexit__(exc_type, exc, tb)
 
     async def _get(self, url, params=None):
-        async with self.session.get(url, allow_redirects=True, params=params) as resp:
-            resp.raise_for_status()
-            return await resp.text()
+        self.error_429_rate_limiter.raise_if_not_relaxed()
+        self.error_connect_rate_limiter.raise_if_not_relaxed()
+
+        try:
+            async with self.session.get(
+                url, allow_redirects=True, params=params
+            ) as resp:
+                try:
+                    resp.raise_for_status()
+                    return await resp.text()
+                except ClientResponseError as e:
+                    if e.code == 429:
+                        self.error_429_rate_limiter.notify()
+                    raise e
+        except ClientConnectorError as e:
+            self.error_connect_rate_limiter.notify()
+            raise e
 
     @staticmethod
     def create():
