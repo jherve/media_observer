@@ -15,6 +15,7 @@ from de_quoi_parle_le_monde.internet_archive import (
 )
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
+from config import settings
 
 
 @frozen
@@ -136,7 +137,10 @@ async def main():
     logger.info("Starting snapshot service..")
     jobs = SnapshotJob.create(10, [8, 12, 18, 22])
 
-    async with InternetArchiveClient.create(1.0, 1.0) as ia:
+    async with InternetArchiveClient.create(
+        settings.internet_archive_limiter_max_rate,
+        settings.internet_archive_limiter_time_period,
+    ) as ia:
         worker = SnapshotWorker(storage, ia)
         await asyncio.gather(*[worker.run(job) for job in jobs])
     logger.info("Snapshot service exiting")
