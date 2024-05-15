@@ -106,12 +106,12 @@ class InternetArchiveClient:
             record = CdxRecord.parse_line(line)
             return InternetArchiveSnapshotId.from_record(record)
 
-        resp = await self.session.get(self.search_url, req.into_params())
+        resp = await self._get(self.search_url, req.into_params())
 
         return [to_snapshot_id(line) for line in resp.splitlines()]
 
     async def fetch(self, id_: InternetArchiveSnapshotId) -> str:
-        resp = await self.session.get(id_.url)
+        resp = await self._get(id_.url)
         return InternetArchiveSnapshot(id_, resp)
 
     async def get_snapshot_id_closest_to(self, url, dt):
@@ -134,3 +134,6 @@ class InternetArchiveClient:
             return min(all_snaps, key=lambda s: abs(s.timestamp - dt))
         else:
             raise SnapshotNotYetAvailable(dt)
+
+    async def _get(self, url, params=None):
+        return await self.session.get(url, params)
