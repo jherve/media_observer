@@ -9,7 +9,6 @@ from loguru import logger
 
 
 from de_quoi_parle_le_monde.article import ArchiveCollection
-from de_quoi_parle_le_monde.http import HttpClient, HttpSession
 from de_quoi_parle_le_monde.internet_archive import (
     InternetArchiveClient,
     SnapshotNotYetAvailable,
@@ -132,14 +131,12 @@ class SnapshotWorker:
 
 
 async def main():
-    http_client = HttpClient()
     storage = await Storage.create()
 
     logger.info("Starting snapshot service..")
     jobs = SnapshotJob.create(10, [8, 12, 18, 22])
 
-    async with http_client.session() as session:
-        ia = InternetArchiveClient(session)
+    async with InternetArchiveClient.create(1.0, 1.0) as ia:
         worker = SnapshotWorker(storage, ia)
         await asyncio.gather(*[worker.run(job) for job in jobs])
     logger.info("Snapshot service exiting")

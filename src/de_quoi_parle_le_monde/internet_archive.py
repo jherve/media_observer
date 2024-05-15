@@ -2,8 +2,9 @@ from attrs import frozen, field
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
 import cattrs
+from aiohttp.client import ClientSession, TCPConnector
+from aiolimiter import AsyncLimiter
 
-from de_quoi_parle_le_monde.http import HttpSession
 
 Timestamp = NewType("Timestamp", datetime)
 datetime_format = "%Y%m%d%H%M%S"
@@ -93,10 +94,22 @@ class InternetArchiveSnapshot:
     text: str = field(repr=False)
 
 
+class RateLimitedConnector(TCPConnector):
+    def __init__(self, *args, **kwargs):
+        limiter_max_rate = kwargs.pop("limiter_max_rate")
+        limiter_time_period = kwargs.pop("limiter_time_period", 60)
+        self._limiter = AsyncLimiter(limiter_max_rate, limiter_time_period)
+        super().__init__(*args, **kwargs)
+
+    async def connect(self, req, *args, **kwargs):
+        async with self._limiter:
+            return await super().connect(req, *args, **kwargs)
+
+
 @frozen
 class InternetArchiveClient:
     # https://github.com/internetarchive/wayback/tree/master/wayback-cdx-server
-    session: HttpSession
+    session: ClientSession
     search_url: ClassVar[str] = "http://web.archive.org/cdx/search/cdx"
 
     async def search_snapshots(
@@ -135,5 +148,22 @@ class InternetArchiveClient:
         else:
             raise SnapshotNotYetAvailable(dt)
 
+    async def __aenter__(self):
+        await self.session.__aenter__()
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb):
+        return await self.session.__aexit__(exc_type, exc, tb)
+
     async def _get(self, url, params=None):
-        return await self.session.get(url, params)
+        async with self.session.get(url, allow_redirects=True, params=params) as resp:
+            resp.raise_for_status()
+            return await resp.text()
+
+    @staticmethod
+    def create(limiter_max_rate, limiter_time_period):
+        conn = RateLimitedConnector(
+            limiter_max_rate=limiter_max_rate, limiter_time_period=limiter_time_period
+        )
+        session = ClientSession(connector=conn)
+        return InternetArchiveClient(session)
