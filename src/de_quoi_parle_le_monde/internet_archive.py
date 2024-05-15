@@ -5,6 +5,8 @@ import cattrs
 from aiohttp.client import ClientSession, TCPConnector
 from aiolimiter import AsyncLimiter
 
+from config import settings
+
 
 Timestamp = NewType("Timestamp", datetime)
 datetime_format = "%Y%m%d%H%M%S"
@@ -161,9 +163,10 @@ class InternetArchiveClient:
             return await resp.text()
 
     @staticmethod
-    def create(limiter_max_rate, limiter_time_period):
+    def create():
         conn = RateLimitedConnector(
-            limiter_max_rate=limiter_max_rate, limiter_time_period=limiter_time_period
+            limiter_max_rate=settings.internet_archive.limiter_max_rate,
+            limiter_time_period=settings.internet_archive.limiter_time_period,
         )
         session = ClientSession(connector=conn)
         return InternetArchiveClient(session)

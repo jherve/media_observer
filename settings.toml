@@ -1,3 +1,5 @@
 database_url="sqlite:///test.db"
-internet_archive_limiter_max_rate=1.0
-internet_archive_limiter_time_period=1.0
+
+[internet_archive]
+limiter_max_rate=1.0
+limiter_time_period=1.0
