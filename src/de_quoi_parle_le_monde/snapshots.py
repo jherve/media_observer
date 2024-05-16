@@ -30,10 +30,14 @@ class SnapshotJob:
 
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
+        now = datetime.now()
+
         return [
-            datetime.combine(date.today() - timedelta(days=i), time(hour=h))
+            dt
             for i in range(0, n)
             for h in hours
+            if (dt := datetime.combine(date.today() - timedelta(days=i), time(hour=h)))
+            < now
         ]
 
 
