@@ -33,7 +33,20 @@ class UniqueIndex:
 @frozen
 class Column:
     name: str
-    attrs: str
+    type_: str | None = None
+    primary_key: bool = False
+    references: str | None = None
+
+    @property
+    def attrs(self):
+        if self.primary_key:
+            return "SERIAL PRIMARY KEY"
+        elif self.references is not None:
+            return f"INTEGER REFERENCES {self.references}"
+        elif self.type_ is not None:
+            return self.type_
+        else:
+            raise ValueError("Missing informations in column")
 
 
 @frozen
@@ -62,7 +75,7 @@ class View:
 
     async def create_if_not_exists(self, conn):
         stmt = f"""
-        CREATE VIEW IF NOT EXISTS {self.name} AS
+        CREATE OR REPLACE VIEW {self.name} AS
         {self.create_stmt}
         """
         await conn.execute(stmt)
@@ -73,82 +86,82 @@ class Storage:
         Table(
             name="sites",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
-                Column(name="name", attrs="TEXT"),
-                Column(name="original_url", attrs="TEXT"),
+                Column(name="id", primary_key=True),
+                Column(name="name", type_="TEXT"),
+                Column(name="original_url", type_="TEXT"),
             ],
         ),
         Table(
             name="snapshots",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="id", primary_key=True),
                 Column(
                     name="site_id",
-                    attrs="INTEGER REFERENCES sites (id) ON DELETE CASCADE",
+                    references="sites (id) ON DELETE CASCADE",
                 ),
-                Column(name="timestamp", attrs="TEXT"),
-                Column(name="timestamp_virtual", attrs="TEXT"),
-                Column(name="url_original", attrs="TEXT"),
-                Column(name="url_snapshot", attrs="TEXT"),
+                Column(name="timestamp", type_="timestamp"),
+                Column(name="timestamp_virtual", type_="timestamp"),
+                Column(name="url_original", type_="TEXT"),
+                Column(name="url_snapshot", type_="TEXT"),
             ],
         ),
         Table(
             name="featured_articles",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
-                Column(name="url", attrs="TEXT"),
+                Column(name="id", primary_key=True),
+                Column(name="url", type_="TEXT"),
             ],
         ),
         Table(
             name="featured_article_snapshots",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="id", primary_key=True),
                 Column(
                     name="featured_article_id",
-                    attrs="INTEGER REFERENCES featured_articles (id) ON DELETE CASCADE",
+                    references="featured_articles (id) ON DELETE CASCADE",
                 ),
-                Column(name="title", attrs="TEXT"),
-                Column(name="url", attrs="TEXT"),
+                Column(name="title", type_="TEXT"),
+                Column(name="url", type_="TEXT"),
             ],
         ),
         Table(
             name="main_articles",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="id", primary_key=True),
                 Column(
                     name="snapshot_id",
-                    attrs="INTEGER REFERENCES snapshots (id) ON DELETE CASCADE",
+                    references="snapshots (id) ON DELETE CASCADE",
                 ),
                 Column(
                     name="featured_article_snapshot_id",
-                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                    references="featured_article_snapshots (id) ON DELETE CASCADE",
                 ),
             ],
         ),
         Table(
             name="top_articles",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="id", primary_key=True),
                 Column(
                     name="snapshot_id",
-                    attrs="INTEGER REFERENCES snapshots (id) ON DELETE CASCADE",
+                    references="snapshots (id) ON DELETE CASCADE",
                 ),
                 Column(
                     name="featured_article_snapshot_id",
-                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                    references="featured_article_snapshots (id) ON DELETE CASCADE",
                 ),
-                Column(name="rank", attrs="INTEGER"),
+                Column(name="rank", type_="INTEGER"),
             ],
         ),
         Table(
             name="articles_embeddings",
             columns=[
-                Column(name="id", attrs="INTEGER PRIMARY KEY AUTOINCREMENT"),
+                Column(name="id", primary_key=True),
                 Column(
                     name="featured_article_snapshot_id",
-                    attrs="INTEGER REFERENCES featured_article_snapshots (id) ON DELETE CASCADE",
+                    references="featured_article_snapshots (id) ON DELETE CASCADE",
                 ),
-                Column(name="title_embedding", attrs="BLOB"),
+                Column(name="title_embedding", type_="bytea"),
             ],
         ),
     ]
