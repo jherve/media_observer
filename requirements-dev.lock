@@ -35,6 +35,10 @@ anyio==4.3.0
     # via httpx
     # via starlette
     # via watchfiles
+async-timeout==4.0.3
+    # via asyncpg
+asyncpg==0.29.0
+    # via de-quoi-parle-le-monde
 attrs==23.2.0
     # via aiohttp
     # via aiohttp-client-cache

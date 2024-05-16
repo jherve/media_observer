@@ -11,6 +11,7 @@ from de_quoi_parle_le_monde.article import (
     FeaturedArticle,
 )
 from de_quoi_parle_le_monde.db.sqlite import DbConnectionSQLite
+from de_quoi_parle_le_monde.db.postgres import DbConnectionPostgres
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
 
@@ -291,6 +292,8 @@ class Storage:
                 raise ValueError("Absolute URLs not supported for sqlite")
             elif conn_url.path.startswith("/"):
                 self.conn = DbConnectionSQLite(conn_url.path[1:])
+        elif conn_url.scheme == "postgresql":
+            self.conn = DbConnectionPostgres(settings.database_url)
         else:
             raise ValueError("Only the SQLite backend is supported")
 
