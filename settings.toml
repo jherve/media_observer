@@ -1,5 +1,9 @@
 database_url="sqlite:///test.db"
 
+[snapshots]
+days_in_past=3
+hours=[8, 12, 18, 22]
+
 [internet_archive]
 limiter_max_rate=1.0
 limiter_time_period=1.0

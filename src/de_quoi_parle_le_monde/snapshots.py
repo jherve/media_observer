@@ -139,7 +139,7 @@ async def main():
     storage = await Storage.create()
 
     logger.info("Starting snapshot service..")
-    jobs = SnapshotJob.create(10, [8, 12, 18, 22])
+    jobs = SnapshotJob.create(settings.snapshots.days_in_past, settings.snapshots.hours)
 
     async with InternetArchiveClient.create() as ia:
         worker = SnapshotWorker(storage, ia)
