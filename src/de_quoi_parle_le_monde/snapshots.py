@@ -17,16 +17,25 @@ from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
 from config import settings
 
+idx = 0
+
+
+def unique_id():
+    global idx
+    idx = idx + 1
+    return idx
+
 
 @frozen
 class SnapshotJob:
+    id_: int
     collection: ArchiveCollection
     dt: datetime
 
     @classmethod
     def create(cls, n_days: int, hours: list[int]):
         dts = cls.last_n_days_at_hours(n_days, hours)
-        return [cls(c, d) for d in dts for c in media_collection.values()]
+        return [cls(unique_id(), c, d) for d in dts for c in media_collection.values()]
 
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
@@ -125,12 +134,19 @@ class SnapshotWorker:
             return
 
         try:
-            logger.info(f"Start handling snap for collection {collection.name} @ {dt}")
+            logger.debug(
+                f"[{job.id_: <3}] Start handling snap for collection {collection.name} @ {dt}"
+            )
             id_closest = await self.find(collection, dt)
+            logger.debug(f"[{job.id_: <3}] Found snapshot id")
             closest = await self.ia_client.fetch(id_closest)
+            logger.debug(f"[{job.id_: <3}] Fetched snapshot")
             main_page = await self.parse(collection, closest)
+            logger.debug(f"[{job.id_: <3}] Parsed snapshot")
             await self.store(main_page, collection, dt)
-            logger.info(f"Snap for collection {collection.name} @ {dt} is stored")
+            logger.info(
+                f"[{job.id_: <3}] Snap for collection {collection.name} @ {dt} is stored"
+            )
         except Exception:
             return
 
