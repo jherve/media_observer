@@ -82,26 +82,7 @@ class SnapshotStoreJob(Job):
     dt: datetime
 
     async def run(self, storage: Storage):
-        page, collection, dt = self.page, self.collection, self.dt
-        site_id = await storage.add_site(collection.name, collection.url)
-        snapshot_id = await storage.add_snapshot(site_id, page.snapshot.id, dt)
-
-        article_id = await storage.add_featured_article(
-            page.main_article.article.original
-        )
-        main_article_snap_id = await storage.add_featured_article_snapshot(
-            article_id, page.main_article.article
-        )
-        await storage.add_main_article(snapshot_id, main_article_snap_id)
-
-        for t in page.top_articles:
-            article_id = await storage.add_featured_article(t.article.original)
-            top_article_snap_id = await storage.add_featured_article_snapshot(
-                article_id, t.article
-            )
-            await storage.add_top_article(snapshot_id, top_article_snap_id, t)
-
-        return snapshot_id
+        return await storage.add_page(self.collection, self.page, self.dt)
 
 
 @frozen

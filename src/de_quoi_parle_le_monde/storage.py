@@ -311,93 +311,6 @@ class Storage:
             for v in self.views:
                 await v.create_if_not_exists(conn)
 
-    async def add_site(self, name: str, original_url: str) -> int:
-        return await self._insert_or_get(
-            self._insert_stmt("sites", ["name", "original_url"]),
-            [name, original_url],
-            """
-                    SELECT id
-                    FROM sites
-                    WHERE name = ?
-                    """,
-            [name],
-        )
-
-    async def add_snapshot(
-        self, site_id: int, snapshot: InternetArchiveSnapshotId, virtual: datetime
-    ) -> int:
-        return await self._insert_or_get(
-            self._insert_stmt(
-                "snapshots",
-                [
-                    "timestamp",
-                    "site_id",
-                    "timestamp_virtual",
-                    "url_original",
-                    "url_snapshot",
-                ],
-            ),
-            [snapshot.timestamp, site_id, virtual, snapshot.original, snapshot.url],
-            """
-                    SELECT id
-                    FROM snapshots
-                    WHERE timestamp_virtual = ? AND site_id = ?
-                    """,
-            [virtual, site_id],
-        )
-
-    async def add_featured_article(self, article: FeaturedArticle):
-        return await self._insert_or_get(
-            self._insert_stmt("featured_articles", ["url"]),
-            [str(article.url)],
-            """
-                    SELECT id
-                    FROM featured_articles
-                    WHERE url = ?
-                    """,
-            [str(article.url)],
-        )
-
-    async def add_featured_article_snapshot(
-        self, featured_article_id: int, article: FeaturedArticleSnapshot
-    ):
-        return await self._insert_or_get(
-            self._insert_stmt(
-                "featured_article_snapshots",
-                ["title", "url", "featured_article_id"],
-            ),
-            [article.title, article.url, featured_article_id],
-            """
-                    SELECT id
-                    FROM featured_article_snapshots
-                    WHERE featured_article_id = ? AND url = ?
-                    """,
-            [featured_article_id, article.url],
-        )
-
-    async def add_main_article(self, snapshot_id: int, article_id: int):
-        async with self.conn as conn:
-            await conn.execute_insert(
-                self._insert_stmt(
-                    "main_articles", ["snapshot_id", "featured_article_snapshot_id"]
-                ),
-                [snapshot_id, article_id],
-            )
-            await conn.commit()
-
-    async def add_top_article(
-        self, snapshot_id: int, article_id: int, article: TopArticle
-    ):
-        async with self.conn as conn:
-            await conn.execute_insert(
-                self._insert_stmt(
-                    "top_articles",
-                    ["snapshot_id", "featured_article_snapshot_id", "rank"],
-                ),
-                [snapshot_id, article_id, article.rank],
-            )
-            await conn.commit()
-
     async def exists_snapshot(self, name: str, dt: datetime):
         async with self.conn as conn:
             exists = await conn.execute_fetchall(
@@ -576,21 +489,113 @@ class Storage:
                 for a in main_articles
             ]
 
+    async def add_page(self, collection, page, dt):
+        async with self.conn as conn:
+            site_id = await self._add_site(conn, collection.name, collection.url)
+            snapshot_id = await self._add_snapshot(conn, site_id, page.snapshot.id, dt)
+            article_id = await self._add_featured_article(
+                conn, page.main_article.article.original
+            )
+            main_article_snap_id = await self._add_featured_article_snapshot(
+                conn, article_id, page.main_article.article
+            )
+            await self._add_main_article(conn, snapshot_id, main_article_snap_id)
+
+            for t in page.top_articles:
+                article_id = await self._add_featured_article(conn, t.article.original)
+                top_article_snap_id = await self._add_featured_article_snapshot(
+                    conn, article_id, t.article
+                )
+                await self._add_top_article(conn, snapshot_id, top_article_snap_id, t)
+            await conn.commit()
+
+            return site_id
+
+    async def _add_site(self, conn, name: str, original_url: str) -> int:
+        return await self._insert_or_get(
+            conn,
+            self._insert_stmt("sites", ["name", "original_url"]),
+            [name, original_url],
+            "SELECT id FROM sites WHERE name = ?",
+            [name],
+        )
+
+    async def _add_snapshot(
+        self, conn, site_id: int, snapshot: InternetArchiveSnapshotId, virtual: datetime
+    ) -> int:
+        return await self._insert_or_get(
+            conn,
+            self._insert_stmt(
+                "snapshots",
+                [
+                    "timestamp",
+                    "site_id",
+                    "timestamp_virtual",
+                    "url_original",
+                    "url_snapshot",
+                ],
+            ),
+            [snapshot.timestamp, site_id, virtual, snapshot.original, snapshot.url],
+            "SELECT id FROM snapshots WHERE timestamp_virtual = ? AND site_id = ?",
+            [virtual, site_id],
+        )
+
+    async def _add_featured_article(self, conn, article: FeaturedArticle):
+        return await self._insert_or_get(
+            conn,
+            self._insert_stmt("featured_articles", ["url"]),
+            [str(article.url)],
+            "SELECT id FROM featured_articles WHERE url = ?",
+            [str(article.url)],
+        )
+
+    async def _add_featured_article_snapshot(
+        self, conn, featured_article_id: int, article: FeaturedArticleSnapshot
+    ):
+        return await self._insert_or_get(
+            conn,
+            self._insert_stmt(
+                "featured_article_snapshots",
+                ["title", "url", "featured_article_id"],
+            ),
+            [article.title, article.url, featured_article_id],
+            "SELECT id FROM featured_article_snapshots WHERE featured_article_id = ? AND url = ?",
+            [featured_article_id, article.url],
+        )
+
+    async def _add_main_article(self, conn, snapshot_id: int, article_id: int):
+        await conn.execute_insert(
+            self._insert_stmt(
+                "main_articles", ["snapshot_id", "featured_article_snapshot_id"]
+            ),
+            [snapshot_id, article_id],
+        )
+
+    async def _add_top_article(
+        self, conn, snapshot_id: int, article_id: int, article: TopArticle
+    ):
+        await conn.execute_insert(
+            self._insert_stmt(
+                "top_articles",
+                ["snapshot_id", "featured_article_snapshot_id", "rank"],
+            ),
+            [snapshot_id, article_id, article.rank],
+        )
+
     async def _insert_or_get(
         self,
+        conn,
         insert_stmt: str,
         insert_args: list[Any],
         select_stmt: str,
         select_args: list[Any],
     ) -> int:
-        async with self.conn as conn:
-            (id_,) = await conn.execute_insert(insert_stmt, insert_args)
+        (id_,) = await conn.execute_insert(insert_stmt, insert_args)
 
-            if id_ == 0:
-                [(id_,)] = await conn.execute_fetchall(select_stmt, select_args)
+        if id_ == 0:
+            [(id_,)] = await conn.execute_fetchall(select_stmt, select_args)
 
-            await conn.commit()
-            return id_
+        return id_
 
     @staticmethod
     def _insert_stmt(table, cols):
