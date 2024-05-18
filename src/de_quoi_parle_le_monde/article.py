@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from attrs import frozen
+from attrs import frozen, field
 import cattrs
 from bs4 import BeautifulSoup
 from yarl import URL
@@ -52,7 +52,7 @@ class MainArticle(ABC):
 @frozen
 class MainPage(ABC):
     snapshot: InternetArchiveSnapshot
-    soup: BeautifulSoup
+    soup: BeautifulSoup = field(repr=False)
     top_articles: list[TopArticle]
     main_article: MainArticle
 
