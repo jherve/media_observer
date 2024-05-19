@@ -35,9 +35,6 @@ anyio==4.3.0
     # via httpx
     # via starlette
     # via watchfiles
-async-timeout==4.0.3
-    # via aiohttp
-    # via redis
 attrs==23.2.0
     # via aiohttp
     # via aiohttp-client-cache
@@ -71,10 +68,6 @@ dynaconf==3.2.5
     # via de-quoi-parle-le-monde
 email-validator==2.1.1
     # via fastapi
-exceptiongroup==1.2.1
-    # via anyio
-    # via cattrs
-    # via taskgroup
 faiss-cpu==1.8.0
     # via de-quoi-parle-le-monde
 fastapi==0.111.0
@@ -188,21 +181,14 @@ soupsieve==2.5
     # via beautifulsoup4
 starlette==0.37.2
     # via fastapi
-taskgroup==0.0.0a4
-    # via hypercorn
-tomli==2.0.1
-    # via hypercorn
 typer==0.12.3
     # via fastapi-cli
 typing-extensions==4.11.0
     # via aiosqlite
-    # via anyio
-    # via cattrs
     # via fastapi
     # via pydantic
     # via pydantic-core
     # via typer
-    # via uvicorn
 ujson==5.9.0
     # via fastapi
 url-normalize==1.4.3
