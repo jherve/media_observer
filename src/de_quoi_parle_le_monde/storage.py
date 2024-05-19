@@ -609,10 +609,9 @@ class Storage:
         select_stmt: str,
         select_args: list[Any],
     ) -> int:
-        (id_,) = await conn.execute_insert(insert_stmt, insert_args)
+        await conn.execute_insert(insert_stmt, *insert_args)
 
-        if id_ == 0:
-            [(id_,)] = await conn.execute_fetchall(select_stmt, select_args)
+        [(id_,)] = await conn.execute_fetchall(select_stmt, *select_args)
 
         return id_
 
