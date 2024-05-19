@@ -323,7 +323,7 @@ class Storage:
                 [name, dt],
             )
 
-            return exists != []
+        return exists != []
 
     async def list_all_featured_article_snapshots(self):
         async with self.conn as conn:
@@ -340,6 +340,9 @@ class Storage:
             ]
 
     async def list_snapshot_apparitions(self, featured_article_snapshot_ids: list[int]):
+        if len(featured_article_snapshot_ids) == 0:
+            return []
+
         async with self.conn as conn:
             placeholders = ", ".join(["?" for _ in featured_article_snapshot_ids])
             rows = await conn.execute_fetchall(
