@@ -418,8 +418,8 @@ class Storage:
 
     @classmethod
     def _from_articles_embeddings_row(cls, r):
-        [embeds_view] = [v for v in cls.views if v.name == "articles_embeddings"]
-        d = cls._from_row(r, embeds_view)
+        [embeds_table] = [t for t in cls.tables if t.name == "articles_embeddings"]
+        d = cls._from_row(r, embeds_table)
         d.update(title_embedding=np.frombuffer(d["title_embedding"], dtype="float32"))
 
         return d
