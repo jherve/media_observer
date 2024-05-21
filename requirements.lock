@@ -47,6 +47,8 @@ attrs==23.2.0
     # via cattrs
     # via de-quoi-parle-le-monde
     # via requests-cache
+babel==2.15.0
+    # via de-quoi-parle-le-monde
 beautifulsoup4==4.12.3
     # via de-quoi-parle-le-monde
 boto3==1.34.69

@@ -28,6 +28,7 @@ dependencies = [
     "asyncpg>=0.29.0",
     "annoy>=1.17.3",
     "numpy>=1.26.4",
+    "babel>=2.15.0",
 ]
 readme = "README.md"
 requires-python = ">= 3.11"

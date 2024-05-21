@@ -23,6 +23,7 @@
         </div>
         <div class="focused">
             <a href="{{ focused['url_article'] }}"><h2>{{ focused["title"] }} <img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></h2></a>
+            <time datetime="{{ focused['timestamp_virtual'] }}">{{ absolute_datetime(focused["timestamp_virtual"]) }}</time>
             <div class="similar">
                 <h3>Articles similaires</h3>
                 <ul>
@@ -36,12 +37,16 @@
         </div>
         {% if after %}
             <div class="after">
-                {{ article(after) }} @ {{ after["timestamp_virtual"] }}
+                {{ article(after) }}
+                <time class="absolute" datetime="{{ after['timestamp_virtual'] }}">{{ absolute_datetime(after["timestamp_virtual"]) }}</time>
+                (<time class="relative">{{ duration(focused["timestamp_virtual"], after["timestamp_virtual"]) }}</time>)
             </div>
         {% endif %}
         {% if before %}
             <div class="before">
-                {{ article(before) }} @ {{ before["timestamp_virtual"] }}
+                {{ article(before) }}
+                <time datetime="{{ before['timestamp_virtual'] }}">{{ absolute_datetime(before["timestamp_virtual"]) }}</time>
+                (<time class="relative">{{ duration(focused["timestamp_virtual"], before["timestamp_virtual"]) }}</time>)
             </div>
         {% endif %}
         <div class="down">

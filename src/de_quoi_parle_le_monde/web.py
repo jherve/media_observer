@@ -1,16 +1,37 @@
+from datetime import timedelta
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from babel.dates import format_datetime, format_timedelta
+from babel import Locale
 
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
 from de_quoi_parle_le_monde.similarity_index import SimilaritySearch
 
 
+def add_date_processing(_any):
+    def absolute_datetime(dt):
+        return format_datetime(dt, format="EEEE d MMMM @ HH:mm", locale=Locale("fr", "FR"))
+
+    def duration(reference, target):
+        delta = target - reference
+        kwargs = dict(granularity='hour', locale=Locale("fr", "FR"))
+        if delta > timedelta(0):
+            return f"{format_timedelta(delta, **kwargs)} après"
+        else:
+            return f"{format_timedelta(delta, **kwargs)} avant"
+
+    return {
+        "absolute_datetime": absolute_datetime,
+        "duration": duration
+    }
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+templates = Jinja2Templates(directory="templates", context_processors=[add_date_processing])
 
 
 async def get_db():
