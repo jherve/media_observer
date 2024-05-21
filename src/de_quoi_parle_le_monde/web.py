@@ -18,7 +18,7 @@ async def get_db():
 
 
 async def get_similarity_search(storage: Storage = Depends(get_db)):
-    return SimilaritySearch.create(storage)
+    return SimilaritySearch.load(storage)
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -62,9 +62,9 @@ async def site_main_article_snapshot(
         [(_, similar)] = await sim_index.search(
             [focused_article_id],
             20,
-            lambda s: s < 1.0 and s >= 0.5,
+            lambda s: s < 100 and s >= 25,
         )
-    except ValueError:
+    except KeyError as e:
         similar = []
 
     similar_by_id = {s[0]: s[1] for s in similar}

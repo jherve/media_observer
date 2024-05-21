@@ -31,6 +31,8 @@ aiosqlite==0.20.0
     # via aiohttp-client-cache
 annotated-types==0.6.0
     # via pydantic
+annoy==1.17.3
+    # via de-quoi-parle-le-monde
 anyio==4.3.0
     # via httpx
     # via starlette
@@ -72,8 +74,6 @@ dynaconf==3.2.5
     # via de-quoi-parle-le-monde
 email-validator==2.1.1
     # via fastapi
-faiss-cpu==1.8.0
-    # via de-quoi-parle-le-monde
 fastapi==0.111.0
     # via de-quoi-parle-le-monde
     # via fastapi-cli
@@ -131,7 +131,7 @@ multidict==6.0.5
     # via aiohttp
     # via yarl
 numpy==1.26.4
-    # via faiss-cpu
+    # via de-quoi-parle-le-monde
 orjson==3.10.3
     # via fastapi
 packaging==24.0
