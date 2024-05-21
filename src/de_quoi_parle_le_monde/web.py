@@ -33,9 +33,21 @@ def add_date_processing(_any):
     }
 
 
+def add_logos(_any):
+    return {
+        "logos_info": {m.name: {
+            "background_color": m.logo_background_color,
+            "content": m.logo_content,
+            "src": m.logo_src,
+        } for m in media_collection.values()}
+    }
+
+
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates", context_processors=[add_date_processing])
+templates = Jinja2Templates(
+    directory="templates", context_processors=[add_date_processing, add_logos]
+)
 
 
 async def get_db():

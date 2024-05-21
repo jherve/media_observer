@@ -17,6 +17,16 @@ h1, h2, h3, h4 {
     grid-template-rows: 1fr 3fr 1fr;
 }
 
+.site_logo {
+    display: inline-block;
+    padding: 0.1em;
+    width: 100px;
+}
+.site_logo svg,
+.site_logo img {
+    width: 100px;
+}
+
 #article_browser a {
     text-decoration: none;
 }

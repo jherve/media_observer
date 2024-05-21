@@ -79,6 +79,9 @@ class ArchiveCollection:
     name: str
     url: str
     MainPageClass: type[MainPage]
+    logo_background_color: str
+    logo_src: str | None = None
+    logo_content: str | None = None
 
 
 def to_text(soup: BeautifulSoup, selector: str) -> str:

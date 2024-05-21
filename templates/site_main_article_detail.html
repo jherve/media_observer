@@ -1,17 +1,19 @@
+{% import 'ui.html' as ui with context %}
+
 <html>
 <head>
     <title>Hello</title>
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <a href="{{ url_for('index') }}">Homepage</a>
-    <h1>{{ focused["site_name"] }}</h1>
-
     {% macro article(a) -%}
         <a href="{{ url_for('site_main_article_snapshot', id=a['site_id'], snapshot_id=a['featured_article_snapshot_id']) }}">
-            [{{ a["site_name"] }}] {{ a["title"] }}
+            {{ ui.logo(a["site_name"]) }} {{ a["title"] }}
         </a>
     {%- endmacro %}
+
+    <a href="{{ url_for('index') }}">Homepage</a>
+    <h1>{{ ui.logo(focused["site_name"]) }}</h1>
 
     <div id="article_browser">
         <div class="up">
@@ -24,6 +26,7 @@
         <div class="focused">
             <a href="{{ focused['url_article'] }}"><h2>{{ focused["title"] }} <img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></h2></a>
             <time datetime="{{ focused['timestamp_virtual'] }}">{{ absolute_datetime(focused["timestamp_virtual"]) }}</time>
+            {{ ui.logo(focused["site_name"]) }}
             <div class="similar">
                 <h3>Articles similaires</h3>
                 <ul>

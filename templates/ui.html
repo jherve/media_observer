@@ -1,0 +1,11 @@
+{% macro logo(site_name) -%}
+    {% set logo_info = logos_info[site_name] %}
+
+    <span class="site_logo" style="background-color: {{ logo_info['background_color'] }};">
+        {% if logo_info['content'] %}
+            {{ logo_info['content'] | safe }}
+        {% else %}
+            <img src="{{ logo_info['src'] }}" />
+        {% endif %}
+    </span>
+{%- endmacro %}
