@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from babel.dates import format_datetime, format_timedelta
 from babel import Locale
+import humanize
 
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
@@ -16,16 +17,19 @@ def add_date_processing(_any):
         return format_datetime(dt, format="EEEE d MMMM @ HH:mm", locale=Locale("fr", "FR"))
 
     def duration(reference, target):
+        humanize.activate("fr_FR")
         delta = target - reference
-        kwargs = dict(granularity='hour', locale=Locale("fr", "FR"))
-        if delta > timedelta(0):
-            return f"{format_timedelta(delta, **kwargs)} après"
+        delta_str = humanize.naturaldelta(delta)
+        if abs(delta.total_seconds()) < 10 * 60:
+            return "en même temps"
+        elif delta > timedelta(0):
+            return f"{delta_str} après"
         else:
-            return f"{format_timedelta(delta, **kwargs)} avant"
+            return f"{delta_str} avant"
 
     return {
         "absolute_datetime": absolute_datetime,
-        "duration": duration
+        "duration": duration,
     }
 
 
