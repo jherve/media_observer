@@ -22,10 +22,14 @@ h1, h2, h3, h4 {
 
     align-self: center;
     justify-self: center;
-    padding: 1em;
+    margin: 1em;
 
     overflow: scroll;
     height: 100%;
+    background-color: #eee;
+}
+#article_browser .focused h2 img {
+    vertical-align: middle;
 }
 #article_browser .up {
     grid-area: up;

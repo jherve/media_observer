@@ -22,20 +22,17 @@
             </ul>
         </div>
         <div class="focused">
-            <h2>{{ focused["title"] }}</h2>
-            <p><a href="{{ focused['url_article'] }}">Lien</a></p>
-            <h3>Articles similaires</h3>
-            <ul>
-                {% for s in similar %}
-                    <li>{{ s[1] | round(3) }}
-                        {% if s[0]["is_main"] %}
-                            {{ article(s[0]) }}
-                        {% else %}
-                            {{ s[0]["title"] }}
+            <a href="{{ focused['url_article'] }}"><h2>{{ focused["title"] }} <img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></h2></a>
+            <div class="similar">
+                <h3>Articles similaires</h3>
+                <ul>
+                    {% for s, distance in similar %}
+                        {% if s["is_main"] %}
+                        <li>{{ article(s) }} [{{ distance | round(3) }}]</li>
                         {% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
         {% if after %}
             <div class="after">
