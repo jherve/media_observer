@@ -33,9 +33,12 @@ h1, h2, h3, h4 {
     background-color: #eee;
 
     display: grid;
-    grid-gap: 2em;
+}
+#article_browser .focused time {
+    justify-self: end;
 }
 #article_browser .focused .similar {
+    margin-top: 3em;
     align-self: end;
 }
 #article_browser .focused h2 img {
