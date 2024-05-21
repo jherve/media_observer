@@ -17,6 +17,10 @@ h1, h2, h3, h4 {
     grid-template-rows: 1fr 3fr 1fr;
 }
 
+#article_browser a {
+    text-decoration: none;
+}
+
 #article_browser .focused {
     grid-area: focused;
 
