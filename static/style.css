@@ -27,6 +27,12 @@ h1, h2, h3, h4 {
     overflow: scroll;
     height: 100%;
     background-color: #eee;
+
+    display: grid;
+    grid-gap: 2em;
+}
+#article_browser .focused .similar {
+    align-self: end;
 }
 #article_browser .focused h2 img {
     vertical-align: middle;
