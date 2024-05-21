@@ -28,7 +28,7 @@ h1, h2, h3, h4 {
     justify-self: center;
     margin: 1em;
 
-    overflow: scroll;
+    overflow: hidden;
     height: 100%;
     background-color: #eee;
 
@@ -39,7 +39,7 @@ h1, h2, h3, h4 {
 }
 #article_browser .focused .similar {
     margin-top: 3em;
-    align-self: end;
+    overflow: scroll;
 }
 #article_browser .focused h2 img {
     vertical-align: middle;
