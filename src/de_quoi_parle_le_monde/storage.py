@@ -409,19 +409,6 @@ class Storage:
 
             return [self._from_articles_embeddings_row(r) for r in rows]
 
-    async def get_article_embedding(self, featured_article_snapshot_ids: list[int]):
-        async with self.backend.get_connection() as conn:
-            rows = await conn.execute_fetchall(
-                f"""
-                    SELECT *
-                    FROM articles_embeddings
-                    WHERE featured_article_snapshot_id IN ({self._placeholders(*featured_article_snapshot_ids)})
-                """,
-                *featured_article_snapshot_ids,
-            )
-
-            return [self._from_articles_embeddings_row(r) for r in rows]
-
     @classmethod
     def _from_articles_embeddings_row(cls, r):
         [embeds_table] = [t for t in cls.tables if t.name == "articles_embeddings"]
