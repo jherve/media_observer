@@ -50,5 +50,4 @@ class SqliteBackend:
     async def create(conn_path):
         return SqliteBackend(conn_path)
 
-    async def close(self):
-        ...
+    async def close(self): ...

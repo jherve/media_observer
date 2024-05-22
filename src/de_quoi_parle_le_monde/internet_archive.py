@@ -3,7 +3,6 @@ from pathlib import Path
 from attrs import frozen, field
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
-from loguru import logger
 import cattrs
 from aiohttp.client import (
     ClientSession,

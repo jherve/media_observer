@@ -13,7 +13,6 @@ file_path_index = "./similarity.index"
 file_path_pickle_class = "./similarity.class"
 
 
-
 @define
 class SimilaritySearch:
     storage: Storage
@@ -94,7 +93,9 @@ class SimilaritySearch:
             with open(file_path_pickle_class, "rb") as f:
                 (embedding_to_featured, featured_to_embedding) = pickle.load(f)
 
-            cls.instance = SimilaritySearch(storage, index, embedding_to_featured, featured_to_embedding)
+            cls.instance = SimilaritySearch(
+                storage, index, embedding_to_featured, featured_to_embedding
+            )
 
         return cls.instance
 

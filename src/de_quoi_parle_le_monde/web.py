@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from babel.dates import format_datetime, format_timedelta
+from babel.dates import format_datetime
 from babel import Locale
 import humanize
 
@@ -14,7 +14,9 @@ from de_quoi_parle_le_monde.similarity_index import SimilaritySearch
 
 def add_date_processing(_any):
     def absolute_datetime(dt):
-        return format_datetime(dt, format="EEEE d MMMM @ HH:mm", locale=Locale("fr", "FR"))
+        return format_datetime(
+            dt, format="EEEE d MMMM @ HH:mm", locale=Locale("fr", "FR")
+        )
 
     def duration(reference, target):
         humanize.activate("fr_FR")
@@ -34,11 +36,14 @@ def add_date_processing(_any):
 
 def add_logos(_any):
     return {
-        "logos_info": {m.name: {
-            "background_color": m.logo_background_color,
-            "content": m.logo_content,
-            "src": m.logo_src,
-        } for m in media_collection.values()}
+        "logos_info": {
+            m.name: {
+                "background_color": m.logo_background_color,
+                "content": m.logo_content,
+                "src": m.logo_src,
+            }
+            for m in media_collection.values()
+        }
     }
 
 
@@ -100,7 +105,7 @@ async def site_main_article_snapshot(
             20,
             lambda s: s < 100 and s >= 25,
         )
-    except KeyError as e:
+    except KeyError:
         similar = []
 
     similar_by_id = {s[0]: s[1] for s in similar}

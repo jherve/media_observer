@@ -504,7 +504,9 @@ class Storage:
         async with self.backend.get_connection() as conn:
             async with conn.transaction():
                 site_id = await self._add_site(conn, collection.name, collection.url)
-                snapshot_id = await self._add_snapshot(conn, site_id, page.snapshot.id, dt)
+                snapshot_id = await self._add_snapshot(
+                    conn, site_id, page.snapshot.id, dt
+                )
                 article_id = await self._add_featured_article(
                     conn, page.main_article.article.original
                 )
@@ -514,11 +516,15 @@ class Storage:
                 await self._add_main_article(conn, snapshot_id, main_article_snap_id)
 
                 for t in page.top_articles:
-                    article_id = await self._add_featured_article(conn, t.article.original)
+                    article_id = await self._add_featured_article(
+                        conn, t.article.original
+                    )
                     top_article_snap_id = await self._add_featured_article_snapshot(
                         conn, article_id, t.article
                     )
-                    await self._add_top_article(conn, snapshot_id, top_article_snap_id, t)
+                    await self._add_top_article(
+                        conn, snapshot_id, top_article_snap_id, t
+                    )
 
         return site_id
 
