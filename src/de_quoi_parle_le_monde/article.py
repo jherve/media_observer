@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from attrs import frozen, field
+from attrs import frozen, field, validators
 import cattrs
 from bs4 import BeautifulSoup
 from yarl import URL
@@ -11,31 +11,48 @@ from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 cattrs.register_structure_hook(URL, lambda v, _: URL(v))
 
 
+def url_is_absolute(instance, attribute, value: URL):
+    if not value.is_absolute():
+        raise ValueError("URL of articles must be absolute")
+
+
 @frozen
 class FeaturedArticle:
-    url: URL
-
-    @classmethod
-    def from_internet_archive_url(cls, url_str: str) -> "FeaturedArticle":
-        url = URL(url_str)
-        original_str = url.path.split("/", 3)[-1]
-        return cattrs.structure({"url": original_str}, cls)
+    url: URL = field(validator=[url_is_absolute])
 
 
 @frozen
 class FeaturedArticleSnapshot(ABC):
-    title: str
-    url: str
+    title: str = field(validator=validators.min_len(1))
+    url: URL = field(validator=[url_is_absolute])
     original: FeaturedArticle
 
     @classmethod
     def create(cls, title, url):
+        absolute = cls.clean_web_archive_url(url)
         attrs = dict(
             title=title,
-            url=url,
-            original=FeaturedArticle.from_internet_archive_url(url),
+            url=absolute,
+            original={"url": cls.extract_url_from_web_archive(absolute)},
         )
-        return cls(**attrs)
+        return cattrs.structure(attrs, cls)
+
+    @staticmethod
+    def extract_url_from_web_archive(url: URL):
+        # This extract e.g. this URL
+        # https://www.lemonde.fr/economie/article/2024/05/22/totalenergies-cent-bougies-et-un-feu-de-critiques_6234759_3234.html
+        # from an URL that looks like :
+        # http://web.archive.org/web/20240522114811/https://www.lemonde.fr/economie/article/2024/05/22/totalenergies-cent-bougies-et-un-feu-de-critiques_6234759_3234.html
+        return url.path.split("/", 3)[-1]
+
+    @staticmethod
+    def clean_web_archive_url(url_str: str):
+        parsed = URL(url_str)
+        if parsed.is_absolute():
+            return parsed
+        else:
+            base = URL("https://web.archive.org")
+            return base.join(parsed)
 
 
 @frozen
@@ -43,10 +60,21 @@ class TopArticle(ABC):
     article: FeaturedArticleSnapshot
     rank: int
 
+    @classmethod
+    def create(cls, title, url, rank):
+        article = FeaturedArticleSnapshot.create(title, url)
+        attrs = {"article": cattrs.unstructure(article), "rank": rank}
+        return cattrs.structure(attrs, cls)
+
 
 @frozen
 class MainArticle(ABC):
     article: FeaturedArticleSnapshot
+
+    @classmethod
+    def create(cls, title, url):
+        article = FeaturedArticleSnapshot.create(title, url)
+        return cls(article)
 
 
 @frozen

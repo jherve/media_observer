@@ -575,9 +575,9 @@ class Storage:
                 "featured_article_snapshots",
                 ["title", "url", "featured_article_id"],
             ),
-            [article.title, article.url, featured_article_id],
+            [article.title, str(article.url), featured_article_id],
             "SELECT id FROM featured_article_snapshots WHERE featured_article_id = $1 AND url = $2",
-            [featured_article_id, article.url],
+            [featured_article_id, str(article.url)],
         )
 
     async def _add_main_article(self, conn, snapshot_id: int, article_id: int):

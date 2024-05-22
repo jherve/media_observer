@@ -1,5 +1,4 @@
 from de_quoi_parle_le_monde.article import (
-    FeaturedArticleSnapshot,
     TopArticle,
     MainArticle,
     MainPage,
@@ -17,11 +16,9 @@ class FranceTvInfoMainPage(MainPage):
         all_articles = soup.select("article.card-article-most-read")
 
         return [
-            TopArticle(
-                article=FeaturedArticleSnapshot.create(
-                    title=to_text(a, "p.card-article-most-read__title"),
-                    url=to_href(a, "a"),
-                ),
+            TopArticle.create(
+                title=to_text(a, "p.card-article-most-read__title"),
+                url=to_href(a, "a"),
                 rank=idx + 1,
             )
             for idx, a in enumerate(all_articles)
@@ -42,9 +39,7 @@ class FranceTvInfoMainPage(MainPage):
             main, ".card-article-majeure__title", ".card-article-actu-forte__title"
         )
 
-        return MainArticle(
-            article=FeaturedArticleSnapshot.create(
-                title=title.text.strip(),
-                url=main.find("a")["href"],
-            )
+        return MainArticle.create(
+            title=title.text.strip(),
+            url=main.find("a")["href"],
         )

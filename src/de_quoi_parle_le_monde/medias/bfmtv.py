@@ -1,5 +1,4 @@
 from de_quoi_parle_le_monde.article import (
-    FeaturedArticleSnapshot,
     TopArticle,
     MainArticle,
     MainPage,
@@ -12,10 +11,9 @@ class BfmTvMainPage(MainPage):
     def get_top_articles(soup):
         all_articles = soup.select("section[id*='top_contenus'] li > a")
         return [
-            TopArticle(
-                article=FeaturedArticleSnapshot.create(
-                    title=to_text(a, "h3"), url=a["href"]
-                ),
+            TopArticle.create(
+                title=to_text(a, "h3"),
+                url=a["href"],
                 rank=idx + 1,
             )
             for idx, a in enumerate(all_articles)
@@ -28,9 +26,7 @@ class BfmTvMainPage(MainPage):
             return link["href"]
 
         [main] = soup.select("article.une_item")
-        return MainArticle(
-            article=FeaturedArticleSnapshot.create(
-                title=to_text(main, "h2.title_une_item"),
-                url=to_href(main),
-            )
+        return MainArticle.create(
+            title=to_text(main, "h2.title_une_item"),
+            url=to_href(main),
         )
