@@ -295,24 +295,27 @@ class Storage:
         ),
     ]
 
-    def __init__(self):
+    def __init__(self, backend):
+        self.conn = backend
+
+    @staticmethod
+    async def create():
         # We try to reproduce the scheme used by SQLAlchemy for Database-URLs
         # https://docs.sqlalchemy.org/en/20/core/engines.html#database-urls
         conn_url = URL(settings.database_url)
+        backend = None
 
         if conn_url.scheme == "sqlite":
             if conn_url.path.startswith("//"):
                 raise ValueError("Absolute URLs not supported for sqlite")
             elif conn_url.path.startswith("/"):
-                self.conn = DbConnectionSQLite(conn_url.path[1:])
+                backend = DbConnectionSQLite(conn_url.path[1:])
         elif conn_url.scheme == "postgresql":
-            self.conn = DbConnectionPostgres(settings.database_url)
+            backend = DbConnectionPostgres(settings.database_url)
         else:
             raise ValueError("Only the SQLite backend is supported")
 
-    @staticmethod
-    async def create():
-        storage = Storage()
+        storage = Storage(backend)
         await storage._create_db()
         return storage
 
