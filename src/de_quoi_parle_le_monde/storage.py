@@ -10,7 +10,7 @@ from de_quoi_parle_le_monde.article import (
     FeaturedArticleSnapshot,
     FeaturedArticle,
 )
-from de_quoi_parle_le_monde.db.sqlite import DbConnectionSQLite
+from de_quoi_parle_le_monde.db.sqlite import SqliteBackend
 from de_quoi_parle_le_monde.db.postgres import PostgresBackend
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
 
@@ -312,7 +312,7 @@ class Storage:
             if conn_url.path.startswith("//"):
                 raise ValueError("Absolute URLs not supported for sqlite")
             elif conn_url.path.startswith("/"):
-                backend = DbConnectionSQLite(conn_url.path[1:])
+                backend = await SqliteBackend.create(conn_url.path[1:])
         elif conn_url.scheme == "postgresql":
             backend = await PostgresBackend.create(settings.database_url)
         else:
