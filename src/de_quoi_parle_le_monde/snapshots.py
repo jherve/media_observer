@@ -231,6 +231,7 @@ async def main():
             for t in tasks:
                 t.cancel()
 
+    await storage.close()
     logger.info("Snapshot service exiting")
 
 
