@@ -213,7 +213,7 @@ async def main():
 
     async with InternetArchiveClient.create() as ia:
         workers = {
-            SearchWorker(queue, storage, ia): 1,
+            SearchWorker(queue, storage, ia): 3,
             FetchWorker(queue, ia): 3,
             ParseWorker(queue): 3,
             StoreWorker(queue, storage): 1,
