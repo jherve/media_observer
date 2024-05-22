@@ -19,13 +19,12 @@ def add_date_processing(_any):
     def duration(reference, target):
         humanize.activate("fr_FR")
         delta = target - reference
-        delta_str = humanize.naturaldelta(delta)
         if abs(delta.total_seconds()) < 10 * 60:
             return "en même temps"
         elif delta > timedelta(0):
-            return f"{delta_str} après"
+            return f"{humanize.naturaldelta(delta)} après"
         else:
-            return f"{delta_str} avant"
+            return f"{humanize.naturaldelta(-delta)} avant"
 
     return {
         "absolute_datetime": absolute_datetime,
