@@ -443,7 +443,6 @@ class Storage:
         async with self.conn as conn:
             sites = await conn.execute_fetchall("SELECT * FROM sites")
             return [self._from_row(s, self._table_by_name["sites"]) for s in sites]
-            return [{"id": s[0], "original_url": s[1], "name": s[2]} for s in sites]
 
     async def list_neighbouring_main_articles(
         self,
