@@ -7,9 +7,6 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class FranceTvInfoFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
-
-
 class FranceTvInfoMainPage(MainPage):
     @staticmethod
     def get_top_articles(soup):
@@ -21,7 +18,7 @@ class FranceTvInfoMainPage(MainPage):
 
         return [
             TopArticle(
-                article=FranceTvInfoFeaturedArticleSnapshot.create(
+                article=FeaturedArticleSnapshot.create(
                     title=to_text(a, "p.card-article-most-read__title"),
                     url=to_href(a, "a"),
                 ),
@@ -46,7 +43,7 @@ class FranceTvInfoMainPage(MainPage):
         )
 
         return MainArticle(
-            article=FranceTvInfoFeaturedArticleSnapshot.create(
+            article=FeaturedArticleSnapshot.create(
                 title=title.text.strip(),
                 url=main.find("a")["href"],
             )

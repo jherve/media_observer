@@ -9,9 +9,6 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class CNewsFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
-
-
 class CNewsMainPage(MainPage):
     @staticmethod
     def get_top_articles(soup: BeautifulSoup):
@@ -19,7 +16,7 @@ class CNewsMainPage(MainPage):
 
         return [
             TopArticle(
-                article=CNewsFeaturedArticleSnapshot.create(
+                article=FeaturedArticleSnapshot.create(
                     title=to_text(a, "h3.dm-letop-title"), url=a["href"]
                 ),
                 rank=idx + 1,
@@ -33,7 +30,7 @@ class CNewsMainPage(MainPage):
         [url] = main.select("a")
 
         return MainArticle(
-            article=CNewsFeaturedArticleSnapshot.create(
+            article=FeaturedArticleSnapshot.create(
                 title=to_text(main, "h2.dm-news-title"),
                 url=url["href"],
             )

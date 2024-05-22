@@ -7,16 +7,13 @@ from de_quoi_parle_le_monde.article import (
 )
 
 
-class BfmTvFeaturedArticleSnapshot(FeaturedArticleSnapshot): ...
-
-
 class BfmTvMainPage(MainPage):
     @staticmethod
     def get_top_articles(soup):
         all_articles = soup.select("section[id*='top_contenus'] li > a")
         return [
             TopArticle(
-                article=BfmTvFeaturedArticleSnapshot.create(
+                article=FeaturedArticleSnapshot.create(
                     title=to_text(a, "h3"), url=a["href"]
                 ),
                 rank=idx + 1,
@@ -32,7 +29,7 @@ class BfmTvMainPage(MainPage):
 
         [main] = soup.select("article.une_item")
         return MainArticle(
-            article=BfmTvFeaturedArticleSnapshot.create(
+            article=FeaturedArticleSnapshot.create(
                 title=to_text(main, "h2.title_une_item"),
                 url=to_href(main),
             )
