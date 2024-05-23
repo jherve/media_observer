@@ -4,6 +4,7 @@ from attrs import frozen, field, validators
 import cattrs
 from bs4 import BeautifulSoup
 from yarl import URL
+from zoneinfo import ZoneInfo
 
 from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
 
@@ -114,6 +115,7 @@ class MainPage(ABC):
 class ArchiveCollection:
     name: str
     url: str
+    tz: ZoneInfo
     MainPageClass: type[MainPage]
     logo_background_color: str
     logo_src: str | None = None

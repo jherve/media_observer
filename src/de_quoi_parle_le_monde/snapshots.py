@@ -37,12 +37,14 @@ class SnapshotSearchJob(Job):
 
     @classmethod
     def create(cls, n_days: int, hours: list[int]):
-        dts = cls.last_n_days_at_hours(n_days, hours)
-        return [cls(unique_id(), c, d) for d in dts for c in media_collection.values()]
+        return [
+            cls(unique_id(), c, d)
+            for c in media_collection.values()
+            for d in cls.last_n_days_at_hours(n_days, hours, c.tz)
+        ]
 
     @staticmethod
-    def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
-        tz = ZoneInfo("Europe/Paris")
+    def last_n_days_at_hours(n: int, hours: list[int], tz: ZoneInfo) -> list[datetime]:
         now = datetime.now(tz)
 
         return [
