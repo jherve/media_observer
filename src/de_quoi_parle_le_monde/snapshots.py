@@ -104,6 +104,17 @@ class SearchWorker(Worker):
 
         try:
             id_closest = await job.run(self.ia_client)
+
+            delta = job.dt - id_closest.timestamp
+            abs_delta = abs(delta)
+            if abs_delta.total_seconds() > 3600:
+                time = "after" if delta > timedelta(0) else "before"
+                self._log(
+                    "WARNING",
+                    job,
+                    f"Snapshot is {abs(delta)} {time} the required timestamp ({id_closest.timestamp} instead of {job.dt})",
+                )
+
             return id_closest, [
                 SnapshotFetchJob(job.id_, id_closest, job.collection, job.dt)
             ]
