@@ -17,3 +17,25 @@ WHERE count > 1
 ```
 
 Among other things it leads to "deadends" while browsing the UI, likely because the timestamp search and time diff relies on this false assumption.
+
+2024-05-23 : This is likely not relevant anymore now that the URLs include the timestamp and not the snapshot_id.
+
+### Different virtual timestamp, same timestamp
+
+The snapshot process ends up choosing the same snapshot for different virtual timestamps.
+
+This can be checked with this query :
+
+```sql
+SELECT
+    sv.id, sv.site_id, sv2.id, sv2.site_id, sv.timestamp_virtual, sv2.timestamp_virtual, sv2.timestamp
+FROM snapshots_view sv
+CROSS JOIN snapshots_view sv2
+WHERE
+    sv.id != sv2.id
+    and sv.timestamp = sv2.timestamp
+```
+
+### Web archive URL
+
+In "Le Parisien" article snapshots, the archive url is not good, e.g. : //web.archive.org/web/20240522165852/https://www.leparisien.fr/jo-paris-2024/jo-2024-jusqua-1-900-euros-pour-les-cheminots-22-05-2024-SPE5SAOSZVAL3LE3KCMHP2ZBDE.php

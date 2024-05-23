@@ -436,29 +436,21 @@ class Storage:
     async def list_neighbouring_main_articles(
         self,
         site_id: int,
-        featured_article_snapshot_id: int | None = None,
+        timestamp: datetime | None = None,
     ):
         async with self.backend.get_connection() as conn:
-            if featured_article_snapshot_id is None:
-                timestamp_query, timestamp_params = (
+            if timestamp is None:
+                [row] = await conn.execute_fetchall(
                     """
                     SELECT timestamp_virtual
-                    FROM snapshot_apparitions sav
-                    WHERE is_main AND site_id = $1
+                    FROM snapshots_view
+                    WHERE site_id = $1
                     ORDER BY timestamp_virtual DESC
                     LIMIT 1
                     """,
-                    [site_id],
+                    site_id,
                 )
-            else:
-                timestamp_query, timestamp_params = (
-                    """
-                    SELECT timestamp_virtual
-                    FROM snapshot_apparitions sav
-                    WHERE is_main AND site_id = $1 AND featured_article_snapshot_id = $2
-                    """,
-                    [site_id, featured_article_snapshot_id],
-                )
+                timestamp = row["timestamp_virtual"]
 
             # This query is the union of 3 queries that respectively fetch :
             #   * articles published at the same time as the queried article (including the queried article)
@@ -466,10 +458,8 @@ class Storage:
             #   *the article published just before, on the same site
             main_articles = await conn.execute_fetchall(
                 f"""
-                WITH original_timestamp AS (
-                    {timestamp_query}
-                ), sav_diff AS (
-                    SELECT sav.*, EXTRACT(EPOCH FROM sav.timestamp_virtual - (SELECT * FROM original_timestamp)) :: integer AS time_diff
+                WITH sav_diff AS (
+                    SELECT sav.*, EXTRACT(EPOCH FROM sav.timestamp_virtual - $2) :: integer AS time_diff
                     FROM snapshot_apparitions sav
                 )
                 SELECT * FROM (
@@ -491,7 +481,8 @@ class Storage:
                     LIMIT 1
                 )
                 """,
-                *(timestamp_params),
+                site_id,
+                timestamp,
             )
 
             return [

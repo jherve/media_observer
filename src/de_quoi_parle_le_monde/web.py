@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -78,12 +78,12 @@ async def index(request: Request, storage: Storage = Depends(get_db)):
     )
 
 
-@app.get("/sites/{id}/main_article", response_class=HTMLResponse)
-@app.get("/sites/{id}/main_article/{snapshot_id}", response_class=HTMLResponse)
+@app.get("/t/sites/{id}/main_article", response_class=HTMLResponse)
+@app.get("/t/sites/{id}/main_article/{timestamp}", response_class=HTMLResponse)
 async def site_main_article_snapshot(
     request: Request,
     id: int,
-    snapshot_id: int | None = None,
+    timestamp: datetime | None = None,
     storage: Storage = Depends(get_db),
     sim_index: SimilaritySearch = Depends(get_similarity_search),
 ):
@@ -94,7 +94,7 @@ async def site_main_article_snapshot(
             default=None,
         )
 
-    main_articles = await storage.list_neighbouring_main_articles(id, snapshot_id)
+    main_articles = await storage.list_neighbouring_main_articles(id, timestamp)
     [focused_article] = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] == 0
     ]
