@@ -1,6 +1,8 @@
 # de_quoi_parle_le_monde
 
-### Bug
+## Bugs
+
+### Non-uniqueness of `featured_article_snapshot_id` in `snapshot_apparitions` view
 
 In the `featured_article_snapshot_id` view, the field `featured_article_snapshot_id` is taken as if it was unique by row, but it is not. 
 
@@ -35,3 +37,16 @@ WHERE
     sv.id != sv2.id
     and sv.timestamp = sv2.timestamp
 ```
+
+### Weird choices of snapshot
+
+Some snapshots are chosen even though they are up to 5/6 hours too early / too late.
+
+```sql
+SELECT timestamp-timestamp_virtual AS difference, * FROM snapshots_view
+ORDER BY difference
+```
+
+### Time zones
+
+We want snapshots according to a given localtime, but at the moment the time is taken as UTC.
