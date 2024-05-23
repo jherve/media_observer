@@ -54,8 +54,16 @@ templates = Jinja2Templates(
 )
 
 
+storage = None
+
+
 async def get_db():
-    return await Storage.create()
+    global storage
+
+    if storage is None:
+        storage = await Storage.create()
+
+    return storage
 
 
 async def get_similarity_search(storage: Storage = Depends(get_db)):
