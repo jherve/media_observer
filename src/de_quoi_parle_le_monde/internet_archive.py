@@ -63,7 +63,6 @@ class CdxRequest:
     limit: Optional[int] = None
 
     translation_dict: ClassVar[dict] = dict(from_="from", to_="to")
-    date_format: ClassVar[str] = "%Y%m%d"
     datetime_format: ClassVar[str] = "%Y%m%d%H%M%S"
 
     def into_params(self) -> dict[str, str]:
@@ -79,7 +78,7 @@ class CdxRequest:
     @classmethod
     def _stringify_value(cls, v) -> str:
         if isinstance(v, datetime):
-            return v.strftime(cls.datetime_format)
+            return v.astimezone(tz_utc).strftime(cls.datetime_format)
         else:
             return str(v)
 

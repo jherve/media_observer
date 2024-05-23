@@ -42,8 +42,8 @@ class SnapshotSearchJob(Job):
 
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
-        utc_tz = ZoneInfo("UTC")
-        now = datetime.now(utc_tz)
+        tz = ZoneInfo("Europe/Paris")
+        now = datetime.now(tz)
 
         return [
             dt
@@ -51,7 +51,7 @@ class SnapshotSearchJob(Job):
             for h in hours
             if (
                 dt := datetime.combine(
-                    date.today() - timedelta(days=i), time(hour=h), tzinfo=utc_tz
+                    date.today() - timedelta(days=i), time(hour=h), tzinfo=tz
                 )
             )
             < now
