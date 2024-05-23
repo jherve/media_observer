@@ -13,18 +13,23 @@ cattrs.register_structure_hook(URL, lambda v, _: URL(v))
 
 def url_is_absolute(instance, attribute, value: URL):
     if not value.is_absolute():
-        raise ValueError("URL of articles must be absolute")
+        raise ValueError(f"Expected absolute URL, got {value}")
+
+
+def url_has_scheme(instance, attribute, value: URL):
+    if len(value.scheme) == 0:
+        raise ValueError(f"Expected a scheme in URL, got {value}")
 
 
 @frozen
 class FeaturedArticle:
-    url: URL = field(validator=[url_is_absolute])
+    url: URL = field(validator=[url_is_absolute, url_has_scheme])
 
 
 @frozen
 class FeaturedArticleSnapshot(ABC):
     title: str = field(validator=validators.min_len(1))
-    url: URL = field(validator=[url_is_absolute])
+    url: URL = field(validator=[url_is_absolute, url_has_scheme])
     original: FeaturedArticle
 
     @classmethod
@@ -48,12 +53,14 @@ class FeaturedArticleSnapshot(ABC):
     @staticmethod
     def clean_web_archive_url(url_str: str):
         parsed = URL(url_str)
-        if parsed.is_absolute():
-            return parsed
-        else:
+
+        if not parsed.is_absolute():
             base = URL("https://web.archive.org")
             return base.join(parsed)
-
+        elif len(parsed.scheme) == 0:
+            return parsed.with_scheme("https")
+        else:
+            return parsed
 
 @frozen
 class TopArticle(ABC):

@@ -35,7 +35,3 @@ WHERE
     sv.id != sv2.id
     and sv.timestamp = sv2.timestamp
 ```
-
-### Web archive URL
-
-In "Le Parisien" article snapshots, the archive url is not good, e.g. : //web.archive.org/web/20240522165852/https://www.leparisien.fr/jo-paris-2024/jo-2024-jusqua-1-900-euros-pour-les-cheminots-22-05-2024-SPE5SAOSZVAL3LE3KCMHP2ZBDE.php
