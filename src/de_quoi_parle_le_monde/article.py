@@ -62,6 +62,7 @@ class FeaturedArticleSnapshot(ABC):
         else:
             return parsed
 
+
 @frozen
 class TopArticle(ABC):
     article: FeaturedArticleSnapshot

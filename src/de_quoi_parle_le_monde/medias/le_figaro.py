@@ -1,7 +1,6 @@
 from bs4 import BeautifulSoup
 
 from de_quoi_parle_le_monde.article import (
-    TopArticle,
     MainArticle,
     MainPage,
     to_text,

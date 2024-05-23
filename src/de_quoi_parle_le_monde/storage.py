@@ -457,7 +457,7 @@ class Storage:
             #   * the article published just after, on the same site
             #   *the article published just before, on the same site
             main_articles = await conn.execute_fetchall(
-                f"""
+                """
                 WITH sav_diff AS (
                     SELECT sav.*, EXTRACT(EPOCH FROM sav.timestamp_virtual - $2) :: integer AS time_diff
                     FROM snapshot_apparitions sav
