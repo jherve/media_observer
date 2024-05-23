@@ -492,7 +492,7 @@ class Storage:
             ]
 
     async def add_page(self, collection, page, dt):
-        assert (dt.tzinfo is not None)
+        assert dt.tzinfo is not None
 
         async with self.backend.get_connection() as conn:
             async with conn.transaction():

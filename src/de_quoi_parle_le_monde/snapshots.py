@@ -4,6 +4,7 @@ import tempfile
 import urllib.parse
 from pathlib import Path
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 from attrs import frozen
 from loguru import logger
 
@@ -41,13 +42,18 @@ class SnapshotSearchJob(Job):
 
     @staticmethod
     def last_n_days_at_hours(n: int, hours: list[int]) -> list[datetime]:
-        now = datetime.now()
+        utc_tz = ZoneInfo("UTC")
+        now = datetime.now(utc_tz)
 
         return [
             dt
             for i in range(0, n)
             for h in hours
-            if (dt := datetime.combine(date.today() - timedelta(days=i), time(hour=h)))
+            if (
+                dt := datetime.combine(
+                    date.today() - timedelta(days=i), time(hour=h), tzinfo=utc_tz
+                )
+            )
             < now
         ]
 

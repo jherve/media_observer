@@ -3,6 +3,7 @@ from pathlib import Path
 from attrs import frozen, field
 from typing import Optional, ClassVar, NewType
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 import cattrs
 from aiohttp.client import (
     ClientSession,
@@ -15,12 +16,14 @@ from aiolimiter import AsyncLimiter
 from config import settings
 
 
+tz_utc = ZoneInfo("UTC")
 Timestamp = NewType("Timestamp", datetime)
 datetime_format = "%Y%m%d%H%M%S"
 
 
 def parse_timestamp(s: str) -> Timestamp:
-    return datetime.strptime(s, datetime_format)
+    timestamp = datetime.strptime(s, datetime_format)
+    return timestamp.replace(tzinfo=tz_utc)
 
 
 def timestamp_to_str(ts: Timestamp) -> str:
@@ -187,7 +190,7 @@ class InternetArchiveClient:
             # also allows to always send a new actual request and not
             # hit the cache, but this is obviously an implementation detail
             # of the HTTP layer that this client should not be aware of..
-            to_=min(dt + timedelta(hours=6.0), datetime.now()),
+            to_=min(dt + timedelta(hours=6.0), datetime.now(tz_utc)),
             filter="statuscode:200",
             # Just to be safe, add an arbitrary limit to the number of values returned
             limit=100,
