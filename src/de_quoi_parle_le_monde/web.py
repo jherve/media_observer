@@ -86,8 +86,8 @@ async def index(request: Request, storage: Storage = Depends(get_db)):
     )
 
 
-@app.get("/t/sites/{id}/main_article", response_class=HTMLResponse)
-@app.get("/t/sites/{id}/main_article/{timestamp}", response_class=HTMLResponse)
+@app.get("/sites/{id}/main_article", response_class=HTMLResponse)
+@app.get("/sites/{id}/main_article/{timestamp}", response_class=HTMLResponse)
 async def site_main_article_snapshot(
     request: Request,
     id: int,
