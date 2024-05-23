@@ -46,7 +46,3 @@ Some snapshots are chosen even though they are up to 5/6 hours too early / too l
 SELECT timestamp-timestamp_virtual AS difference, * FROM snapshots_view
 ORDER BY difference
 ```
-
-### Time zones
-
-We want snapshots according to a given localtime, but at the moment the time is taken as UTC.

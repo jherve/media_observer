@@ -6,6 +6,7 @@ from fastapi.templating import Jinja2Templates
 from babel.dates import format_datetime
 from babel import Locale
 import humanize
+from zoneinfo import ZoneInfo
 
 from de_quoi_parle_le_monde.medias import media_collection
 from de_quoi_parle_le_monde.storage import Storage
@@ -13,9 +14,16 @@ from de_quoi_parle_le_monde.similarity_index import SimilaritySearch
 
 
 def add_date_processing(_any):
+    # At the moment this information comes out of nowhere but one might imagine that
+    # in the future it can be deducted from the request or from information the
+    # user gives.
+    user_tz = ZoneInfo("Europe/Paris")
+
     def absolute_datetime(dt):
         return format_datetime(
-            dt, format="EEEE d MMMM @ HH:mm", locale=Locale("fr", "FR")
+            dt.astimezone(user_tz),
+            format="EEEE d MMMM @ HH:mm",
+            locale=Locale("fr", "FR"),
         )
 
     def duration(reference, target):
