@@ -99,8 +99,8 @@ class Storage:
                     name="site_id",
                     references="sites (id) ON DELETE CASCADE",
                 ),
-                Column(name="timestamp", type_="timestamp"),
-                Column(name="timestamp_virtual", type_="timestamp"),
+                Column(name="timestamp", type_="timestamp with time zone"),
+                Column(name="timestamp_virtual", type_="timestamp with time zone"),
                 Column(name="url_original", type_="TEXT"),
                 Column(name="url_snapshot", type_="TEXT"),
             ],
@@ -492,6 +492,8 @@ class Storage:
             ]
 
     async def add_page(self, collection, page, dt):
+        assert (dt.tzinfo is not None)
+
         async with self.backend.get_connection() as conn:
             async with conn.transaction():
                 site_id = await self._add_site(conn, collection.name, collection.url)
