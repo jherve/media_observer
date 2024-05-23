@@ -31,6 +31,7 @@ def timestamp_to_str(ts: Timestamp) -> str:
 
 
 cattrs.register_structure_hook(Timestamp, lambda v, _: parse_timestamp(v))
+cattrs.register_structure_hook(datetime, lambda v, _: v)
 
 
 @frozen
@@ -48,12 +49,17 @@ class CdxRecord:
         return cattrs.structure_attrs_fromtuple(line.split(" "), CdxRecord)
 
 
+def has_timezone(instance, attribute, value: datetime | None):
+    if value and value.tzinfo is None:
+        raise ValueError(f"Expected tz-aware datetime, got {value}")
+
+
 @frozen
 class CdxRequest:
     url: str
     filter: Optional[str] = None
-    from_: Optional[date | datetime] = None
-    to_: Optional[date | datetime] = None
+    from_: Optional[datetime] = field(default=None, validator=has_timezone)
+    to_: Optional[datetime] = field(default=None, validator=has_timezone)
     limit: Optional[int] = None
 
     translation_dict: ClassVar[dict] = dict(from_="from", to_="to")
@@ -72,14 +78,14 @@ class CdxRequest:
 
     @classmethod
     def _stringify_value(cls, v) -> str:
-        # The test against datetime has to come first because `datetime` instances
-        # are also `date` instances
         if isinstance(v, datetime):
             return v.strftime(cls.datetime_format)
-        elif isinstance(v, date):
-            return v.strftime(cls.date_format)
         else:
             return str(v)
+
+    @classmethod
+    def create(cls, **attrs):
+        return cattrs.structure(attrs, cls)
 
 
 class SnapshotNotYetAvailable(Exception):
@@ -182,7 +188,7 @@ class InternetArchiveClient:
         return InternetArchiveSnapshot(id_, resp)
 
     async def get_snapshot_id_closest_to(self, url, dt):
-        req = CdxRequest(
+        req = CdxRequest.create(
             url=url,
             from_=dt - timedelta(hours=6.0),
             # It does not make sense to ask for snapshots in the future.
