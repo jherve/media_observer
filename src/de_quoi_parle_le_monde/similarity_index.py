@@ -89,13 +89,17 @@ class SimilaritySearch:
         if cls.instance is None:
             d = 1024
             index = AnnoyIndex(d, "dot")
-            index.load(file_path_index)
-            with open(file_path_pickle_class, "rb") as f:
-                (embedding_to_featured, featured_to_embedding) = pickle.load(f)
+            try:
+                index.load(file_path_index)
+                with open(file_path_pickle_class, "rb") as f:
+                    (embedding_to_featured, featured_to_embedding) = pickle.load(f)
 
-            cls.instance = SimilaritySearch(
-                storage, index, embedding_to_featured, featured_to_embedding
-            )
+                cls.instance = SimilaritySearch(
+                    storage, index, embedding_to_featured, featured_to_embedding
+                )
+            except OSError:
+                logger.warning("Could not find index data")
+                cls.instance = SimilaritySearch(storage, index)
 
         return cls.instance
 
