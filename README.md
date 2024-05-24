@@ -1,48 +1,40 @@
-# media_observer
+# Media Observer
 
-## Bugs
+A data / AI project to capture / analyse the evolution over time of the frontpages of main media sites.
 
-### Non-uniqueness of `featured_article_snapshot_id` in `snapshot_apparitions` view
+The basic process consists of :
 
-In the `featured_article_snapshot_id` view, the field `featured_article_snapshot_id` is taken as if it was unique by row, but it is not. 
+* finding snapshots of those sites as they were at precise times of the day (e.g. at 8h, 12h, 18h and 22h),
+* parse those snapshots to extract relevant info (e.g. the main headline),
+* store that info in a local database,
+* find semantic similarities within the headlines using language models
 
-This can be easily checked with this query :
+A basic web UI is available to display the results.
 
-```sql
-SELECT * FROM (
-    SELECT featured_article_snapshot_id, json_group_array(snapshot_id), COUNT(*) as count
-    FROM snapshot_apparitions
-    WHERE is_main -- Not required
-    GROUP BY featured_article_snapshot_id
-)
-WHERE count > 1
+At the moment, 6 sites are supported (see them [there](src/media_observer/medias/__init__.py)) but the list will expand over time.
+
+None of this would be possible without the incredible [Wayback Machine](http://web.archive.org/) and the volunteers that have helped setup the snapshotting of all those sites for decades.
+
+## Installation
+
+First you need to setup a PostgreSQL server and create a database whose path / credentials will be stored in a file `.secrets.toml` with the key `database_url`.
+
+```
+database_url="postgresql://user:password@yourdomain.com:port/database_name
 ```
 
-Among other things it leads to "deadends" while browsing the UI, likely because the timestamp search and time diff relies on this false assumption.
+### With Rye
 
-2024-05-23 : This is likely not relevant anymore now that the URLs include the timestamp and not the snapshot_id.
+1. Install Rye project manager (following instructions from https://rye.astral.sh/guide/installation/)
+1. Install dependencies : `rye sync --no-lock --no-dev --all-features`
 
-### Different virtual timestamp, same timestamp
+## Running the project
 
-The snapshot process ends up choosing the same snapshot for different virtual timestamps.
+Setup your preferences by updating [the configuration file](./settings.toml)
 
-This can be checked with this query :
+### With Rye
 
-```sql
-SELECT
-    sv.id, sv.site_id, sv2.id, sv2.site_id, sv.timestamp_virtual, sv2.timestamp_virtual, sv2.timestamp
-FROM snapshots_view sv
-CROSS JOIN snapshots_view sv2
-WHERE
-    sv.id != sv2.id
-    and sv.timestamp = sv2.timestamp
-```
-
-### Weird choices of snapshot
-
-Some snapshots are chosen even though they are up to 5/6 hours too early / too late.
-
-```sql
-SELECT timestamp-timestamp_virtual AS difference, * FROM snapshots_view
-ORDER BY difference
-```
+* Do the site snapshots : `rye run snapshots`
+* Compute the embeddings : `rye run embeddings`
+* Build the similarity index : `rye run similarity_index`
+* Run the web server : `rye run web_server`

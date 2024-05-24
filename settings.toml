@@ -1,9 +1,21 @@
 [snapshots]
+# How many days in the past snapshots will be looked for
 days_in_past=3
+# We will attempt to find snapshots that are close to those hours (in local time)
 hours=[8, 12, 18, 22]
 
 [internet_archive]
+# The 2 next settings allow limiting the rate at which requests will be sent to the Internet Archive.
+# In a given interval of limiter_time_period (in seconds), at most limiter_max_rate requests will be sent.
+
+# The `max_rate` setting of AsyncLimiter : https://aiolimiter.readthedocs.io/en/latest/#aiolimiter.AsyncLimiter
 limiter_max_rate=1.0
+# The `time_period` setting of AsyncLimiter : https://aiolimiter.readthedocs.io/en/latest/#aiolimiter.AsyncLimiter
 limiter_time_period=1.0
+
+# Number of seconds during which no request will be sent after a "429 Too Many Requests"
+# HTTP error has been received
 relaxation_time_after_error_429=60
+# Number of seconds during which no request will be sent after encountering a TCP connection
+# error
 relaxation_time_after_error_connect=60
