@@ -22,10 +22,10 @@
     {%- endmacro %}
 
     {% macro article_other_time(a, class_, focus) -%}
-        <div class="{{ class_ }}">
-            {{ article(a) }}
+        <div class="article-other-time {{ class_ }}">
+            <div class="title">{{ article(a) }}</div>
+            {{ time_relative(focus["timestamp_virtual"], a["timestamp_virtual"]) }}
             {{ time_absolute(a['timestamp_virtual']) }}
-            ({{ time_relative(focus["timestamp_virtual"], a["timestamp_virtual"]) }})
         </div>
     {%- endmacro -%}
 

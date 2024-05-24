@@ -15,6 +15,7 @@ h1, h2, h3, h4 {
     ". down .";
     grid-template-columns: 1fr 3fr 1fr;
     grid-template-rows: 1fr 3fr 1fr;
+    grid-gap: 1em;
 }
 
 .site_logo {
@@ -62,6 +63,10 @@ h1, h2, h3, h4 {
     grid-area: before;
     align-self: center;
 }
+#article_browser .article-other-time {
+    height: 100%;
+}
+
 #article_browser .after {
     grid-area: after;
     align-self: center;
@@ -74,4 +79,25 @@ h1, h2, h3, h4 {
 #article_browser :not(.focused) ul {
     list-style: none;
     margin-block-start: 0;
+}
+
+/* Styling of articles that are presented left and right of the main article */
+.article-other-time {
+    display: grid;
+    grid-template-areas:
+    "relative"
+    "title"
+    "absolute";
+    grid-template-rows: auto 1fr auto;
+}
+.article-other-time time.relative {
+    grid-area: relative;
+}
+.article-other-time .title {
+    grid-area: title;
+    align-self: center;
+}
+.article-other-time time.absolute {
+    grid-area: absolute;
+    justify-self: end;
 }
