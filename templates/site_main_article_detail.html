@@ -35,11 +35,11 @@
 
     {% macro articles_list_same_time(a_list, class_) -%}
         <div class="{{ class_ }}">
-            <ul>
+            <ol>
                 {% for a in a_list %}
                     <li>{{ article_same_time(a) }}</li>
                 {% endfor %}
-            </ul>
+            </ol>
         </div>
     {%- endmacro -%}
 
@@ -60,13 +60,13 @@
             {{ ui.logo(focused["site_name"]) }}
             <div class="similar">
                 <h3>Articles similaires</h3>
-                <ul>
+                <ol>
                     {% for s, distance in similar %}
                         {% if s["is_main"] %}
                             <li>{{ article_similar(s, distance, focused)}}</li>
                         {% endif %}
                     {% endfor %}
-                </ul>
+                </ol>
             </div>
         </div>
         {% if after %}
