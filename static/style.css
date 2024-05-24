@@ -26,11 +26,10 @@ ul, ol {
 .site_logo {
     display: inline-block;
     padding: 0.1em;
-    width: 100px;
 }
 .site_logo svg,
 .site_logo img {
-    width: 100px;
+    width: min(10vw, 100px);
 }
 
 #article_browser a {
@@ -60,6 +59,10 @@ ul, ol {
 #article_browser .focused h2 img {
     vertical-align: middle;
 }
+#article_browser .focused > .site_logo {
+    width: 100px;
+}
+
 #article_browser .up {
     grid-area: up;
     overflow: scroll;
