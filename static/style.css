@@ -106,3 +106,20 @@ ul, ol {
     grid-area: absolute;
     justify-self: end;
 }
+
+.articles-same-time > ol {
+    display: flex;
+    flex-direction: column;
+    grid-gap: 0.2em;
+}
+
+.article-same-time {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-gap: 0.5em;
+    align-items: center;
+}
+.article-same-time h2 {
+    font-size: 1rem;
+    font-weight: normal;
+}

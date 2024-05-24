@@ -34,11 +34,16 @@
     {%- endmacro -%}
 
     {% macro article_same_time(a) -%}
-        {{ article(a) }}
+        <a href="{{ url_to_article_page(a) }}">
+            <div class="article-same-time">
+                {{ ui.logo(a["site_name"]) }}
+                <h2>{{ a["title"] }}</h2>
+            </div>
+        </a>
     {%- endmacro -%}
 
     {% macro articles_list_same_time(a_list, class_) -%}
-        <div class="{{ class_ }}">
+        <div class="articles-same-time {{ class_ }}">
             <ol>
                 {% for a in a_list %}
                     <li>{{ article_same_time(a) }}</li>
