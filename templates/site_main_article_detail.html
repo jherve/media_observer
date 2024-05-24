@@ -33,6 +33,16 @@
         {{ article(a) }}
     {%- endmacro -%}
 
+    {% macro articles_list_same_time(a_list, class_) -%}
+        <div class="{{ class_ }}">
+            <ul>
+                {% for a in a_list %}
+                    <li>{{ article_same_time(a) }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {%- endmacro -%}
+
     {% macro article_similar(a, distance, focus) -%}
         {{ article(a) }}
         {{ time_relative(focus["timestamp_virtual"], a["timestamp_virtual"]) }}
@@ -43,13 +53,7 @@
     <h1>{{ ui.logo(focused["site_name"]) }}</h1>
 
     <div id="article_browser">
-        <div class="up">
-            <ul>
-                {% for a in simultaneous_up %}
-                    <li>{{ article_same_time(a) }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+        {{ articles_list_same_time(simultaneous_up, "up") }}
         <div class="focused">
             <a href="{{ focused['url_article'] }}"><h2>{{ focused["title"] }} <img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></h2></a>
             {{ time_absolute(focused['timestamp_virtual']) }}
@@ -71,13 +75,7 @@
         {% if before %}
             {{ article_other_time(before, "before", focused )}}
         {% endif %}
-        <div class="down">
-            <ul>
-                {% for a in simultaneous_down %}
-                    <li>{{ article_same_time(a) }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+        {{ articles_list_same_time(simultaneous_down, "down") }}
     </div>
 </body>
 </html>
