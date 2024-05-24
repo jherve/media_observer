@@ -1,5 +1,5 @@
 [project]
-name = "de_quoi_parle_le_monde"
+name = "media_observer"
 version = "0.1.0"
 description = "Default template for PDM package"
 authors = [
@@ -51,10 +51,10 @@ dev-dependencies = []
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/de_quoi_parle_le_monde"]
+packages = ["src/media_observer"]
 
 [tool.rye.scripts]
-web_server = {cmd = "hypercorn --bind '0.0.0.0:8000' de_quoi_parle_le_monde.web:app"}
-snapshots = {call = "de_quoi_parle_le_monde.snapshots"}
-embeddings = {call = "de_quoi_parle_le_monde.embeddings"}
-similarity_index = {call = "de_quoi_parle_le_monde.similarity_index"}
+web_server = {cmd = "hypercorn --bind '0.0.0.0:8000' media_observer.web:app"}
+snapshots = {call = "media_observer.snapshots"}
+embeddings = {call = "media_observer.embeddings"}
+similarity_index = {call = "media_observer.similarity_index"}

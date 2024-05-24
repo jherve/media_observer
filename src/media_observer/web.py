@@ -8,9 +8,9 @@ from babel import Locale
 import humanize
 from zoneinfo import ZoneInfo
 
-from de_quoi_parle_le_monde.medias import media_collection
-from de_quoi_parle_le_monde.storage import Storage
-from de_quoi_parle_le_monde.similarity_index import SimilaritySearch
+from media_observer.medias import media_collection
+from media_observer.storage import Storage
+from media_observer.similarity_index import SimilaritySearch
 
 
 def add_date_processing(_any):

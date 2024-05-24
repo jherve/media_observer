@@ -9,16 +9,16 @@ from attrs import frozen
 from loguru import logger
 
 
-from de_quoi_parle_le_monde.article import ArchiveCollection, MainPage
-from de_quoi_parle_le_monde.internet_archive import (
+from media_observer.article import ArchiveCollection, MainPage
+from media_observer.internet_archive import (
     InternetArchiveClient,
     InternetArchiveSnapshot,
     InternetArchiveSnapshotId,
     SnapshotNotYetAvailable,
 )
-from de_quoi_parle_le_monde.medias import media_collection
-from de_quoi_parle_le_monde.storage import Storage
-from de_quoi_parle_le_monde.worker import Job, Worker, JobQueue
+from media_observer.medias import media_collection
+from media_observer.storage import Storage
+from media_observer.worker import Job, Worker, JobQueue
 from config import settings
 
 idx = 0

@@ -5,14 +5,14 @@ from attrs import frozen
 from yarl import URL
 
 from config import settings
-from de_quoi_parle_le_monde.article import (
+from media_observer.article import (
     TopArticle,
     FeaturedArticleSnapshot,
     FeaturedArticle,
 )
-from de_quoi_parle_le_monde.db.sqlite import SqliteBackend
-from de_quoi_parle_le_monde.db.postgres import PostgresBackend
-from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshotId
+from media_observer.db.sqlite import SqliteBackend
+from media_observer.db.postgres import PostgresBackend
+from media_observer.internet_archive import InternetArchiveSnapshotId
 
 
 @frozen

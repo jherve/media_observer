@@ -6,7 +6,7 @@ from loguru import logger
 from annoy import AnnoyIndex
 
 
-from de_quoi_parle_le_monde.storage import Storage
+from media_observer.storage import Storage
 
 
 file_path_index = "./similarity.index"

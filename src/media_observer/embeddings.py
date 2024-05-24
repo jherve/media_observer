@@ -7,7 +7,7 @@ from attrs import frozen
 from numpy.typing import NDArray
 from sentence_transformers import SentenceTransformer
 
-from de_quoi_parle_le_monde.storage import Storage
+from media_observer.storage import Storage
 
 
 def batched(iterable, n):

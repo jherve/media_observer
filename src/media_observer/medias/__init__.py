@@ -1,6 +1,6 @@
 from zoneinfo import ZoneInfo
 
-from de_quoi_parle_le_monde.article import ArchiveCollection
+from media_observer.article import ArchiveCollection
 
 from .france_tv_info import FranceTvInfoMainPage
 from .le_monde import LeMondeMainPage

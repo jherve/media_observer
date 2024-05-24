@@ -1,21 +1,20 @@
 from bs4 import BeautifulSoup
 
-from de_quoi_parle_le_monde.article import (
+from media_observer.article import (
     TopArticle,
     MainArticle,
     MainPage,
-    to_text,
 )
 
 
-class CNewsMainPage(MainPage):
+class LeParisienMainPage(MainPage):
     @staticmethod
     def get_top_articles(soup: BeautifulSoup):
-        all_articles = soup.select(".top-news-content a")
+        all_articles = soup.select("a[data-block-name='Les_plus_lus']")
 
         return [
             TopArticle.create(
-                title=to_text(a, "h3.dm-letop-title"),
+                title=a.text.strip(),
                 url=a["href"],
                 rank=idx + 1,
             )
@@ -24,10 +23,10 @@ class CNewsMainPage(MainPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select("div.dm-block")[0]
-        [url] = main.select("a")
+        main = soup.select(".homepage__top article")[0]
+        url = main.select("a")[0]
 
         return MainArticle.create(
-            title=to_text(main, "h2.dm-news-title"),
+            title=url.text.strip(),
             url=url["href"],
         )

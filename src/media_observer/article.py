@@ -6,7 +6,7 @@ from bs4 import BeautifulSoup
 from yarl import URL
 from zoneinfo import ZoneInfo
 
-from de_quoi_parle_le_monde.internet_archive import InternetArchiveSnapshot
+from media_observer.internet_archive import InternetArchiveSnapshot
 
 
 cattrs.register_structure_hook(URL, lambda v, _: URL(v))
