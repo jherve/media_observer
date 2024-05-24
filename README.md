@@ -2,6 +2,14 @@
 
 A data / AI project to capture / analyse the evolution over time of the frontpages of main media sites.
 
+A live version is available here (Please forgive the ugly UI 🥹 !) : http://18.171.236.162:8000/
+
+_\* Hosted on an AWS free-tier EC2 instance + "12 months free" RDS database, managed with Terraform_
+
+## What is this ?
+
+This project aims at observing what subjects news medias put forward on their websites.
+
 The basic process consists of :
 
 * finding snapshots of those sites as they were at precise times of the day (e.g. at 8h, 12h, 18h and 22h),
