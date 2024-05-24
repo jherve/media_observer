@@ -153,7 +153,7 @@ ul, ol {
 
 .article-same-time {
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto 1fr;
     grid-gap: 0.5em;
     align-items: center;
 }
