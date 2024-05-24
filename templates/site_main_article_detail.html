@@ -13,6 +13,32 @@
         </a>
     {%- endmacro %}
 
+    {% macro time_absolute(timestamp) %}
+        <time class="absolute" datetime="{{ timestamp }}">{{ absolute_datetime(timestamp) }}</time>
+    {%- endmacro %}
+
+    {% macro time_relative(reference, timestamp) %}
+        <time class="relative">{{ duration(reference, timestamp) }}</time>
+    {%- endmacro %}
+
+    {% macro article_other_time(a, class_, focus) -%}
+        <div class="{{ class_ }}">
+            {{ article(a) }}
+            {{ time_absolute(a['timestamp_virtual']) }}
+            ({{ time_relative(focus["timestamp_virtual"], a["timestamp_virtual"]) }})
+        </div>
+    {%- endmacro -%}
+
+    {% macro article_same_time(a) -%}
+        {{ article(a) }}
+    {%- endmacro -%}
+
+    {% macro article_similar(a, distance, focus) -%}
+        {{ article(a) }}
+        {{ time_relative(focus["timestamp_virtual"], a["timestamp_virtual"]) }}
+        [{{ distance | round(3) }}]
+    {%- endmacro -%}
+
     <a href="{{ url_for('index') }}">Homepage</a>
     <h1>{{ ui.logo(focused["site_name"]) }}</h1>
 
@@ -20,45 +46,35 @@
         <div class="up">
             <ul>
                 {% for a in simultaneous_up %}
-                    <li>{{ article(a) }}</li>
+                    <li>{{ article_same_time(a) }}</li>
                 {% endfor %}
             </ul>
         </div>
         <div class="focused">
             <a href="{{ focused['url_article'] }}"><h2>{{ focused["title"] }} <img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></h2></a>
-            <time datetime="{{ focused['timestamp_virtual'] }}">{{ absolute_datetime(focused["timestamp_virtual"]) }}</time>
+            {{ time_absolute(focused['timestamp_virtual']) }}
             {{ ui.logo(focused["site_name"]) }}
             <div class="similar">
                 <h3>Articles similaires</h3>
                 <ul>
                     {% for s, distance in similar %}
                         {% if s["is_main"] %}
-                        <li>{{ article(s) }}
-                            <time class="relative">{{ duration(focused["timestamp_virtual"], s["timestamp_virtual"]) }}</time>
-                            [{{ distance | round(3) }}]</li>
+                            <li>{{ article_similar(s, distance, focused)}}</li>
                         {% endif %}
                     {% endfor %}
                 </ul>
             </div>
         </div>
         {% if after %}
-            <div class="after">
-                {{ article(after) }}
-                <time class="absolute" datetime="{{ after['timestamp_virtual'] }}">{{ absolute_datetime(after["timestamp_virtual"]) }}</time>
-                (<time class="relative">{{ duration(focused["timestamp_virtual"], after["timestamp_virtual"]) }}</time>)
-            </div>
+            {{ article_other_time(after, "after", focused )}}
         {% endif %}
         {% if before %}
-            <div class="before">
-                {{ article(before) }}
-                <time datetime="{{ before['timestamp_virtual'] }}">{{ absolute_datetime(before["timestamp_virtual"]) }}</time>
-                (<time class="relative">{{ duration(focused["timestamp_virtual"], before["timestamp_virtual"]) }}</time>)
-            </div>
+            {{ article_other_time(before, "before", focused )}}
         {% endif %}
         <div class="down">
             <ul>
                 {% for a in simultaneous_down %}
-                    <li>{{ article(a) }}</li>
+                    <li>{{ article_same_time(a) }}</li>
                 {% endfor %}
             </ul>
         </div>
