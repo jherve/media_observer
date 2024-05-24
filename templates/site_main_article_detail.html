@@ -7,8 +7,12 @@
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
+    {% macro url_to_article_page(a) -%}
+        {{ url_for('site_main_article_snapshot', id=a['site_id'], timestamp=a['timestamp_virtual']) }}
+    {%- endmacro %}
+
     {% macro article(a) -%}
-        <a href="{{ url_for('site_main_article_snapshot', id=a['site_id'], timestamp=a['timestamp_virtual']) }}">
+        <a href="{{ url_to_article_page(a) }}">
             {{ ui.logo(a["site_name"]) }} {{ a["title"] }}
         </a>
     {%- endmacro %}
