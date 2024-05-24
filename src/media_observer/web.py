@@ -82,7 +82,9 @@ async def get_similarity_search(storage: Storage = Depends(get_db)):
 async def index(request: Request, storage: Storage = Depends(get_db)):
     sites = await storage.list_sites()
     return templates.TemplateResponse(
-        request=request, name="index.html", context={"sites": sites}
+        request=request,
+        name="index.html",
+        context={"page_title": "Observatoire des médias", "sites": sites},
     )
 
 
@@ -165,13 +167,4 @@ async def site_main_article_snapshot(
                 lambda a: a["time_diff"] < 0,
             ),
         },
-    )
-
-
-@app.get("/admin", response_class=HTMLResponse)
-async def admin_index(request: Request):
-    return templates.TemplateResponse(
-        request=request,
-        name="admin/index.html",
-        context={"collections": media_collection},
     )

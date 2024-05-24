@@ -3,12 +3,11 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Hello</title>
+    <title>{{ page_title }}</title>
     <link href="{{ url_for('static', path='/style.css') }}" rel="stylesheet">
 </head>
 <body>
-    <a href="{{ url_for('admin_index') }}">Admin page</a>
-    <h1>Hello World !</h1>
+    <h1>{{ page_title }}</h1>
 
     <ul>
         {% for s in sites %}
