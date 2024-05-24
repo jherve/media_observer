@@ -2,7 +2,9 @@
 
 A data / AI project to capture / analyse the evolution over time of the frontpages of main media sites.
 
-A live version is available here (Please forgive the ugly UI 🥹 !) : http://18.171.236.162:8000/
+A live version is available here : http://18.171.236.162:8000/
+
+(Please forgive the ugly UI 🥹 ! You'd better use it on desktop, though there is an almost readable mobile version)
 
 _\* Hosted on an AWS free-tier EC2 instance + "12 months free" RDS database, managed with Terraform_
 
