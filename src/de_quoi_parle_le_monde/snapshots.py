@@ -59,18 +59,12 @@ class SnapshotSearchJob(Job):
             < now
         ]
 
-    async def run(self, ia_client: InternetArchiveClient):
-        return await ia_client.get_snapshot_id_closest_to(self.collection.url, self.dt)
-
 
 @frozen
 class SnapshotFetchJob(Job):
     snap_id: InternetArchiveSnapshotId
     collection: ArchiveCollection
     dt: datetime
-
-    async def run(self, ia_client: InternetArchiveClient):
-        return await ia_client.fetch(self.snap_id)
 
 
 @frozen
@@ -79,18 +73,12 @@ class SnapshotParseJob(Job):
     snapshot: InternetArchiveSnapshot
     dt: datetime
 
-    async def run(self):
-        return await self.collection.MainPageClass.from_snapshot(self.snapshot)
-
 
 @frozen
 class SnapshotStoreJob(Job):
     page: MainPage
     collection: ArchiveCollection
     dt: datetime
-
-    async def run(self, storage: Storage):
-        return await storage.add_page(self.collection, self.page, self.dt)
 
 
 @frozen
@@ -111,7 +99,9 @@ class SearchWorker(Worker):
         )
 
         try:
-            id_closest = await job.run(self.ia_client)
+            id_closest = await self.ia_client.get_snapshot_id_closest_to(
+                job.collection.url, job.dt
+            )
 
             delta = job.dt - id_closest.timestamp
             abs_delta = abs(delta)
@@ -152,7 +142,7 @@ class FetchWorker(Worker):
 
     async def execute(self, job: SnapshotFetchJob):
         try:
-            closest = await job.run(self.ia_client)
+            closest = await self.ia_client.fetch(job.snap_id)
             return closest, [SnapshotParseJob(job.id_, job.collection, closest, job.dt)]
         except Exception as e:
             self._log("ERROR", job, f"Error while fetching {job.snap_id}")
@@ -166,7 +156,7 @@ class ParseWorker(Worker):
 
     async def execute(self, job: SnapshotParseJob):
         try:
-            main_page = await job.run()
+            main_page = await job.collection.MainPageClass.from_snapshot(job.snapshot)
             return main_page, [
                 SnapshotStoreJob(job.id_, main_page, job.collection, job.dt)
             ]
@@ -199,7 +189,7 @@ class StoreWorker(Worker):
 
     async def execute(self, job: SnapshotStoreJob):
         try:
-            return await job.run(self.storage), []
+            return await self.storage.add_page(job.collection, job.page, job.dt), []
         except Exception as e:
             self._log(
                 "ERROR",

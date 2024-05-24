@@ -9,9 +9,6 @@ from typing import Any, ClassVar
 class Job(ABC):
     id_: int
 
-    @abstractmethod
-    async def run(self, *args): ...
-
 
 class JobQueue:
     def __init__(self, job_types) -> None:
