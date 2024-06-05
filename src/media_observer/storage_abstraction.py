@@ -1,3 +1,5 @@
+from abc import ABC
+from datetime import datetime
 from attrs import frozen
 
 
@@ -65,3 +67,46 @@ class View:
         {self.create_stmt}
         """
         await conn.execute(stmt)
+
+
+class StorageAbc(ABC):
+    def __init__(self, backend):
+        self.backend = backend
+
+    async def close(self):
+        await self.backend.close()
+
+    @staticmethod
+    async def create():
+        raise NotImplementedError()
+
+    async def exists_snapshot(self, name: str, dt: datetime):
+        raise NotImplementedError()
+
+    async def list_all_featured_article_snapshots(self):
+        raise NotImplementedError()
+
+    async def list_snapshot_apparitions(self, featured_article_snapshot_ids: list[int]):
+        raise NotImplementedError()
+
+    async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
+        raise NotImplementedError()
+
+    async def list_all_articles_embeddings(self):
+        raise NotImplementedError()
+
+    async def add_embedding(self, featured_article_snapshot_id: int, embedding):
+        raise NotImplementedError()
+
+    async def list_sites(self):
+        raise NotImplementedError()
+
+    async def list_neighbouring_main_articles(
+        self,
+        site_id: int,
+        timestamp: datetime | None = None,
+    ):
+        raise NotImplementedError()
+
+    async def add_page(self, collection, page, dt):
+        raise NotImplementedError()

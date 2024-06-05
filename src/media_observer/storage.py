@@ -9,13 +9,19 @@ from media_observer.article import (
     FeaturedArticleSnapshot,
     FeaturedArticle,
 )
-from media_observer.storage_abstraction import Table, Column, UniqueIndex, View
+from media_observer.storage_abstraction import (
+    Table,
+    Column,
+    UniqueIndex,
+    View,
+    StorageAbc,
+)
 from media_observer.db.sqlite import SqliteBackend
 from media_observer.db.postgres import PostgresBackend
 from media_observer.internet_archive import InternetArchiveSnapshotId
 
 
-class Storage:
+class Storage(StorageAbc):
     tables = [
         Table(
             name="sites",
