@@ -46,35 +46,35 @@ class Storage(StorageAbc):
             ],
         ),
         Table(
-            name="featured_articles",
+            name="articles",
             columns=[
                 Column(name="id", primary_key=True),
                 Column(name="url", type_="TEXT"),
             ],
         ),
         Table(
-            name="featured_article_snapshots",
+            name="titles",
             columns=[
                 Column(name="id", primary_key=True),
-                Column(
-                    name="featured_article_id",
-                    references="featured_articles (id) ON DELETE CASCADE",
-                ),
-                Column(name="title", type_="TEXT"),
-                Column(name="url", type_="TEXT"),
+                Column(name="text", type_="TEXT"),
             ],
         ),
         Table(
             name="main_articles",
             columns=[
                 Column(name="id", primary_key=True),
+                Column(name="url", type_="TEXT"),
                 Column(
                     name="snapshot_id",
                     references="snapshots (id) ON DELETE CASCADE",
                 ),
                 Column(
-                    name="featured_article_snapshot_id",
-                    references="featured_article_snapshots (id) ON DELETE CASCADE",
+                    name="article_id",
+                    references="articles (id) ON DELETE CASCADE",
+                ),
+                Column(
+                    name="title_id",
+                    references="titles (id) ON DELETE CASCADE",
                 ),
             ],
         ),
@@ -82,26 +82,28 @@ class Storage(StorageAbc):
             name="top_articles",
             columns=[
                 Column(name="id", primary_key=True),
+                Column(name="url", type_="TEXT"),
+                Column(name="rank", type_="INTEGER"),
                 Column(
                     name="snapshot_id",
                     references="snapshots (id) ON DELETE CASCADE",
                 ),
                 Column(
-                    name="featured_article_snapshot_id",
-                    references="featured_article_snapshots (id) ON DELETE CASCADE",
+                    name="article_id",
+                    references="articles (id) ON DELETE CASCADE",
                 ),
-                Column(name="rank", type_="INTEGER"),
+                Column(
+                    name="title_id",
+                    references="titles (id) ON DELETE CASCADE",
+                ),
             ],
         ),
         Table(
-            name="articles_embeddings",
+            name="embeddings",
             columns=[
                 Column(name="id", primary_key=True),
-                Column(
-                    name="featured_article_snapshot_id",
-                    references="featured_article_snapshots (id) ON DELETE CASCADE",
-                ),
-                Column(name="title_embedding", type_="bytea"),
+                Column(name="title_id", references="titles (id) ON DELETE CASCADE"),
+                Column(name="vector", type_="bytea"),
             ],
         ),
     ]
@@ -135,8 +137,8 @@ class Storage(StorageAbc):
             name="main_page_apparitions",
             column_names=[
                 "id",
-                "featured_article_id",
                 "title",
+                "title_id",
                 "url_archive",
                 "url_article",
                 "main_in_snapshot_id",
@@ -145,18 +147,32 @@ class Storage(StorageAbc):
             ],
             create_stmt="""
                 SELECT
-                    fas.id,
-                    fas.featured_article_id,
-                    fas.title,
-                    fas.url AS url_archive,
-                    fa.url AS url_article,
-                    m.snapshot_id AS main_in_snapshot_id,
-                    t.snapshot_id AS top_in_snapshot_id,
-                    t.rank
-                FROM featured_article_snapshots fas
-                JOIN featured_articles fa ON fa.id = fas.featured_article_id
-                LEFT JOIN main_articles m ON m.featured_article_snapshot_id = fas.id
-                LEFT JOIN top_articles t ON t.featured_article_snapshot_id = fas.id
+                    a.id,
+                    t.text AS title,
+                    t.id AS title_id,
+                    ma.url AS url_archive,
+                    a.url AS url_article,
+                    ma.snapshot_id AS main_in_snapshot_id,
+                    NULL AS top_in_snapshot_id,
+                    NULL AS rank
+                FROM articles a
+                JOIN main_articles ma ON ma.article_id = a.id
+                JOIN titles t ON t.id = ma.title_id
+
+                UNION ALL
+
+                SELECT
+                    a.id,
+                    t.text AS title,
+                    t.id AS title_id,
+                    ta.url AS url_archive,
+                    a.url AS url_article,
+                    NULL AS main_in_snapshot_id,
+                    ta.snapshot_id AS top_in_snapshot_id,
+                    ta.rank
+                FROM articles a
+                JOIN top_articles ta ON ta.article_id = a.id
+                JOIN titles t ON t.id = ta.title_id
                 """,
         ),
         View(
@@ -168,9 +184,9 @@ class Storage(StorageAbc):
                 "site_original_url",
                 "timestamp",
                 "timestamp_virtual",
-                "featured_article_snapshot_id",
-                "featured_article_id",
+                "article_id",
                 "title",
+                "title_id",
                 "url_archive",
                 "url_article",
                 "is_main",
@@ -178,22 +194,22 @@ class Storage(StorageAbc):
             ],
             create_stmt="""
                 SELECT
-                    sv.id as snapshot_id,
+                    sv.id AS snapshot_id,
                     sv.site_id,
                     sv.site_name,
                     sv.site_original_url,
-                    sv.timestamp,
+                    sv."timestamp",
                     sv.timestamp_virtual,
-                    mpa.id AS featured_article_snapshot_id,
-                    mpa.featured_article_id,
+                    mpa.id AS article_id,
                     mpa.title,
+                    mpa.title_id,
                     mpa.url_archive,
                     mpa.url_article,
                     mpa.main_in_snapshot_id IS NOT NULL AS is_main,
                     mpa.rank
                 FROM main_page_apparitions mpa
                 JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
-                """,
+            """,
         ),
     ]
 
@@ -209,29 +225,29 @@ class Storage(StorageAbc):
             columns=["timestamp_virtual", "site_id"],
         ),
         UniqueIndex(
-            name="main_articles_unique_idx_snapshot_id",
-            table="main_articles",
-            columns=["snapshot_id"],
-        ),
-        UniqueIndex(
-            name="featured_articles_unique_url",
-            table="featured_articles",
+            name="articles_unique_url",
+            table="articles",
             columns=["url"],
         ),
         UniqueIndex(
-            name="featured_article_snapshots_unique_idx_featured_article_id_url",
-            table="featured_article_snapshots",
-            columns=["featured_article_id", "url"],
+            name="titles_unique_text",
+            table="titles",
+            columns=["text"],
         ),
         UniqueIndex(
-            name="top_articles_unique_idx_snapshot_id_rank",
+            name="main_articles_unique_idx_snapshot_id_article_id",
+            table="main_articles",
+            columns=["snapshot_id", "article_id"],
+        ),
+        UniqueIndex(
+            name="top_articles_unique_idx_snapshot_id_article_id_rank",
             table="top_articles",
-            columns=["snapshot_id", "rank"],
+            columns=["snapshot_id", "article_id", "rank"],
         ),
         UniqueIndex(
-            name="articles_embeddings_unique_idx_featured_article_snapshot_id",
-            table="articles_embeddings",
-            columns=["featured_article_snapshot_id"],
+            name="embeddings_unique_title_id",
+            table="embeddings",
+            columns=["title_id"],
         ),
     ]
 
@@ -288,90 +304,11 @@ class Storage(StorageAbc):
 
         return exists != []
 
-    async def list_all_featured_article_snapshots(self):
-        async with self.backend.get_connection() as conn:
-            rows = await conn.execute_fetchall(
-                """
-                    SELECT *
-                    FROM featured_article_snapshots
-                """,
-            )
-
-            return [
-                self._from_row(r, self._table_by_name["featured_article_snapshots"])
-                for r in rows
-            ]
-
-    async def list_snapshot_apparitions(self, featured_article_snapshot_ids: list[int]):
-        if len(featured_article_snapshot_ids) == 0:
-            return []
-
-        async with self.backend.get_connection() as conn:
-            rows = await conn.execute_fetchall(
-                f"""
-                    SELECT *
-                    FROM snapshot_apparitions
-                    WHERE featured_article_snapshot_id IN ({self._placeholders(*featured_article_snapshot_ids)})
-                """,
-                *featured_article_snapshot_ids,
-            )
-
-            return [
-                self._from_row(r, self._view_by_name["snapshot_apparitions"])
-                for r in rows
-            ]
-
     @classmethod
     def _from_row(cls, r, table_or_view: Table | View):
         columns = table_or_view.column_names
 
         return {col: r[idx] for idx, col in enumerate(columns)}
-
-    async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
-        async with self.backend.get_connection() as conn:
-            rows = await conn.execute_fetchall(
-                """
-                    SELECT featured_article_snapshot_id
-                    FROM articles_embeddings
-                """,
-            )
-
-            return [r[0] for r in rows]
-
-    async def list_all_articles_embeddings(self):
-        async with self.backend.get_connection() as conn:
-            rows = await conn.execute_fetchall(
-                """
-                    SELECT *
-                    FROM articles_embeddings
-                """,
-            )
-
-            return [self._from_articles_embeddings_row(r) for r in rows]
-
-    @classmethod
-    def _from_articles_embeddings_row(cls, r):
-        [embeds_table] = [t for t in cls.tables if t.name == "articles_embeddings"]
-        d = cls._from_row(r, embeds_table)
-        d.update(title_embedding=np.frombuffer(d["title_embedding"], dtype="float32"))
-
-        return d
-
-    async def add_embedding(self, featured_article_snapshot_id: int, embedding):
-        async with self.backend.get_connection() as conn:
-            await conn.execute_insert(
-                self._insert_stmt(
-                    "articles_embeddings",
-                    ["featured_article_snapshot_id", "title_embedding"],
-                ),
-                featured_article_snapshot_id,
-                embedding,
-            )
-
-    async def list_sites(self):
-        async with self.backend.get_connection() as conn:
-            sites = await conn.execute_fetchall("SELECT * FROM sites")
-            return [self._from_row(s, self._table_by_name["sites"]) for s in sites]
 
     async def list_neighbouring_main_articles(
         self,
@@ -431,6 +368,70 @@ class Storage(StorageAbc):
                 for a in main_articles
             ]
 
+    async def list_all_titles_without_embedding(self):
+        async with self.backend.get_connection() as conn:
+            rows = await conn.execute_fetchall("""
+                SELECT t.*
+                FROM public.titles AS t
+                WHERE NOT EXISTS (SELECT 1 FROM embeddings WHERE title_id = t.id)
+            """)
+
+            return [self._from_row(r, self._table_by_name["titles"]) for r in rows]
+
+    async def list_all_embeddings(self):
+        async with self.backend.get_connection() as conn:
+            rows = await conn.execute_fetchall(
+                """
+                    SELECT *
+                    FROM embeddings
+                """,
+            )
+
+            return [self._from_embeddings_row(r) for r in rows]
+
+    async def list_snapshot_apparitions(self, title_ids: list[int]):
+        if len(title_ids) == 0:
+            return []
+
+        async with self.backend.get_connection() as conn:
+            rows = await conn.execute_fetchall(
+                f"""
+                    SELECT *
+                    FROM snapshot_apparitions
+                    WHERE title_id IN ({self._placeholders(*title_ids)})
+                """,
+                *title_ids,
+            )
+
+            return [
+                self._from_row(r, self._view_by_name["snapshot_apparitions"])
+                for r in rows
+            ]
+
+    @classmethod
+    def _from_embeddings_row(cls, r):
+        [embeds_table] = [t for t in cls.tables if t.name == "embeddings"]
+        d = cls._from_row(r, embeds_table)
+        d.update(vector=np.frombuffer(d["vector"], dtype="float32"))
+
+        return d
+
+    async def add_embedding(self, title_id: int, embedding):
+        async with self.backend.get_connection() as conn:
+            await conn.execute_insert(
+                self._insert_stmt(
+                    "embeddings",
+                    ["title_id", "vector"],
+                ),
+                title_id,
+                embedding,
+            )
+
+    async def list_sites(self):
+        async with self.backend.get_connection() as conn:
+            sites = await conn.execute_fetchall("SELECT * FROM sites")
+            return [self._from_row(s, self._table_by_name["sites"]) for s in sites]
+
     async def add_page(self, collection, page, dt):
         assert dt.tzinfo is not None
 
@@ -440,23 +441,23 @@ class Storage(StorageAbc):
                 snapshot_id = await self._add_snapshot(
                     conn, site_id, page.snapshot.id, dt
                 )
-                article_id = await self._add_featured_article(
+                article_id = await self._add_article(
                     conn, page.main_article.article.original
                 )
-                main_article_snap_id = await self._add_featured_article_snapshot(
-                    conn, article_id, page.main_article.article
+                title_id = await self._add_title(conn, page.main_article.article.title)
+                await self._add_main_article(
+                    conn,
+                    snapshot_id,
+                    article_id,
+                    title_id,
+                    page.main_article.article.url,
                 )
-                await self._add_main_article(conn, snapshot_id, main_article_snap_id)
 
                 for t in page.top_articles:
-                    article_id = await self._add_featured_article(
-                        conn, t.article.original
-                    )
-                    top_article_snap_id = await self._add_featured_article_snapshot(
-                        conn, article_id, t.article
-                    )
+                    article_id = await self._add_article(conn, t.article.original)
+                    title_id = await self._add_title(conn, t.article.title)
                     await self._add_top_article(
-                        conn, snapshot_id, top_article_snap_id, t
+                        conn, snapshot_id, article_id, title_id, t.article.url, t.rank
                     )
 
         return site_id
@@ -490,49 +491,56 @@ class Storage(StorageAbc):
             [virtual, site_id],
         )
 
-    async def _add_featured_article(self, conn, article: FeaturedArticle):
+    async def _add_article(self, conn, article: FeaturedArticle):
         return await self._insert_or_get(
             conn,
-            self._insert_stmt("featured_articles", ["url"]),
+            self._insert_stmt("articles", ["url"]),
             [str(article.url)],
-            "SELECT id FROM featured_articles WHERE url = $1",
+            "SELECT id FROM articles WHERE url = $1",
             [str(article.url)],
         )
 
-    async def _add_featured_article_snapshot(
-        self, conn, featured_article_id: int, article: FeaturedArticleSnapshot
+    async def _add_title(self, conn, title: str):
+        return await self._insert_or_get(
+            conn,
+            self._insert_stmt("titles", ["text"]),
+            [title],
+            "SELECT id FROM titles WHERE text = $1",
+            [title],
+        )
+
+    async def _add_main_article(
+        self, conn, snapshot_id: int, article_id: int, title_id: int, url: str
     ):
-        return await self._insert_or_get(
-            conn,
-            self._insert_stmt(
-                "featured_article_snapshots",
-                ["title", "url", "featured_article_id"],
-            ),
-            [article.title, str(article.url), featured_article_id],
-            "SELECT id FROM featured_article_snapshots WHERE featured_article_id = $1 AND url = $2",
-            [featured_article_id, str(article.url)],
-        )
-
-    async def _add_main_article(self, conn, snapshot_id: int, article_id: int):
         await conn.execute_insert(
             self._insert_stmt(
-                "main_articles", ["snapshot_id", "featured_article_snapshot_id"]
+                "main_articles", ["snapshot_id", "article_id", "title_id", "url"]
             ),
             snapshot_id,
             article_id,
+            title_id,
+            str(url),
         )
 
     async def _add_top_article(
-        self, conn, snapshot_id: int, article_id: int, article: TopArticle
+        self,
+        conn,
+        snapshot_id: int,
+        article_id: int,
+        title_id: int,
+        url: str,
+        rank: int,
     ):
         await conn.execute_insert(
             self._insert_stmt(
                 "top_articles",
-                ["snapshot_id", "featured_article_snapshot_id", "rank"],
+                ["snapshot_id", "article_id", "title_id", "url", "rank"],
             ),
             snapshot_id,
             article_id,
-            article.rank,
+            title_id,
+            str(url),
+            rank,
         )
 
     async def _insert_or_get(

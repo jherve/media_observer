@@ -26,21 +26,13 @@ def batched(iterable, n):
 
 @frozen
 class EmbeddingsJob:
-    article_id: int
+    title_id: int
     text: NDArray
 
     @staticmethod
     async def create(storage: Storage):
-        all_snapshots = await storage.list_all_featured_article_snapshots()
-        all_embeds_ids = set(
-            await storage.list_all_embedded_featured_article_snapshot_ids()
-        )
-
-        all_snapshots_not_stored = (
-            s for s in all_snapshots if s["id"] not in all_embeds_ids
-        )
-
-        return [EmbeddingsJob(s["id"], s["title"]) for s in all_snapshots_not_stored]
+        all_titles = await storage.list_all_titles_without_embedding()
+        return [EmbeddingsJob(t["id"], t["text"]) for t in all_titles]
 
 
 @frozen
@@ -73,7 +65,7 @@ class EmbeddingsWorker:
         batch_size = 64
         for batch in batched(jobs, batch_size):
             embeddings_by_id = self.compute_embeddings_for(
-                {j.article_id: j.text for j in batch}
+                {j.title_id: j.text for j in batch}
             )
             await self.store_embeddings(embeddings_by_id)
 

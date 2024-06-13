@@ -17,12 +17,12 @@ file_path_pickle_class = "./similarity.class"
 class SimilaritySearch:
     storage: Storage
     index: AnnoyIndex
-    embedding_to_featured: dict[int, int] = {}
-    featured_to_embedding: dict[int, int] = {}
+    index_id_to_title: dict[int, int] = {}
+    title_to_index_id: dict[int, int] = {}
     instance: ClassVar[Any | None] = None
 
     async def add_embeddings(self):
-        embeds = await self.storage.list_all_articles_embeddings()
+        embeds = await self.storage.list_all_embeddings()
         if not embeds:
             msg = (
                 "Did not find any embeddings in storage. "
@@ -31,41 +31,39 @@ class SimilaritySearch:
             logger.error(msg)
             raise ValueError(msg)
 
-        for e in embeds:
-            self.index.add_item(e["id"], e["title_embedding"])
-            self.embedding_to_featured[e["id"]] = e["featured_article_snapshot_id"]
-            self.featured_to_embedding[e["featured_article_snapshot_id"]] = e["id"]
+        for idx, e in enumerate(embeds):
+            self.index.add_item(idx, e["vector"])
+            self.title_to_index_id[e["title_id"]] = idx
+            self.index_id_to_title[idx] = e["title_id"]
 
         self.index.build(20)
 
     async def search(
         self,
-        featured_article_snapshot_ids: list[int],
+        title_ids: list[int],
         nb_results: int,
         score_func: Callable[[float], bool],
     ):
         try:
-            [embed_id] = [
-                self.featured_to_embedding[id_] for id_ in featured_article_snapshot_ids
-            ]
+            [title_id] = [self.title_to_index_id[id] for id in title_ids]
         except KeyError as e:
             msg = (
-                f"Could not find all embedding(s) in storage for {featured_article_snapshot_ids}. "
+                f"Could not find all embedding(s) in storage for {title_ids}. "
                 "A plausible cause is that they have not been computed yet"
             )
             logger.error(msg)
             raise e
 
         indices, distances = self.index.get_nns_by_item(
-            embed_id, nb_results, include_distances=True
+            title_id, nb_results, include_distances=True
         )
         return [
             (
-                embed_id,
+                title_id,
                 [
-                    (self.embedding_to_featured[i], d)
+                    (self.index_id_to_title[i], d)
                     for i, d in (zip(indices, distances))
-                    if i != embed_id and score_func(d)
+                    if i != title_id and score_func(d)
                 ],
             )
         ]
@@ -82,7 +80,7 @@ class SimilaritySearch:
     async def save(self):
         self.index.save(file_path_index)
         with open(file_path_pickle_class, "wb") as f:
-            pickle.dump((self.embedding_to_featured, self.featured_to_embedding), f)
+            pickle.dump((self.index_id_to_title, self.title_to_index_id), f)
 
     @classmethod
     def load(cls, storage):
@@ -92,10 +90,10 @@ class SimilaritySearch:
             try:
                 index.load(file_path_index)
                 with open(file_path_pickle_class, "rb") as f:
-                    (embedding_to_featured, featured_to_embedding) = pickle.load(f)
+                    (index_to_title, title_to_index) = pickle.load(f)
 
                 cls.instance = SimilaritySearch(
-                    storage, index, embedding_to_featured, featured_to_embedding
+                    storage, index, index_to_title, title_to_index
                 )
             except OSError:
                 logger.warning("Could not find index data")

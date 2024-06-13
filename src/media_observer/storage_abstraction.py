@@ -86,7 +86,7 @@ class StorageAbc(ABC):
     async def list_all_featured_article_snapshots(self):
         raise NotImplementedError()
 
-    async def list_snapshot_apparitions(self, featured_article_snapshot_ids: list[int]):
+    async def list_snapshot_apparitions(self, title_ids: list[int]):
         raise NotImplementedError()
 
     async def list_all_embedded_featured_article_snapshot_ids(self) -> list[int]:
@@ -95,7 +95,7 @@ class StorageAbc(ABC):
     async def list_all_articles_embeddings(self):
         raise NotImplementedError()
 
-    async def add_embedding(self, featured_article_snapshot_id: int, embedding):
+    async def add_embedding(self, title_id: int, embedding):
         raise NotImplementedError()
 
     async def list_sites(self):

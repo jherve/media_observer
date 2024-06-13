@@ -105,6 +105,7 @@ async def site_main_article_snapshot(
         )
 
     main_articles = await storage.list_neighbouring_main_articles(id, timestamp)
+
     [focused_article] = [
         a for a in main_articles if a["site_id"] == id and a["time_diff"] == 0
     ]
@@ -116,10 +117,10 @@ async def site_main_article_snapshot(
         a for a in main_articles if a["site_id"] == id and a["time_diff"] != 0
     ]
 
-    focused_article_id = focused_article["featured_article_snapshot_id"]
+    focused_title_id = focused_article["title_id"]
     try:
         [(_, similar)] = await sim_index.search(
-            [focused_article_id],
+            [focused_title_id],
             20,
             lambda s: s < 100 and s >= 25,
         )
@@ -133,9 +134,9 @@ async def site_main_article_snapshot(
     # A list of articles and score, sorted by descending score
     similar_articles_and_score = sorted(
         [
-            (a, similar_by_id[a["featured_article_snapshot_id"]])
+            (a, similar_by_id[a["title_id"]])
             for a in similar_articles
-            if a["featured_article_snapshot_id"] != focused_article_id
+            if a["title_id"] != focused_title_id
         ],
         key=lambda a: a[1],
         reverse=True,
