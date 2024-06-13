@@ -22,18 +22,30 @@ class UniqueIndex:
 
 
 @frozen
+class Reference:
+    table_name: str
+    column_name: str
+    on_delete: str | None = None
+
+    @property
+    def as_sql(self):
+        on_delete = "ON DELETE CASCADE" if self.on_delete == "cascade" else None
+        return f"{self.table_name} ({self.column_name}) {on_delete}"
+
+
+@frozen
 class Column:
     name: str
     type_: str | None = None
     primary_key: bool = False
-    references: str | None = None
+    references: Reference | None = None
 
     @property
     def attrs(self):
         if self.primary_key:
             return "SERIAL PRIMARY KEY"
         elif self.references is not None:
-            return f"INTEGER REFERENCES {self.references}"
+            return f"INTEGER REFERENCES {self.references.as_sql}"
         elif self.type_ is not None:
             return self.type_
         else:

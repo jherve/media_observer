@@ -11,6 +11,7 @@ from media_observer.article import (
 )
 from media_observer.storage_abstraction import (
     Table,
+    Reference,
     Column,
     UniqueIndex,
     View,
@@ -35,7 +36,7 @@ table_frontpages = Table(
         Column(name="id", primary_key=True),
         Column(
             name="site_id",
-            references="sites (id) ON DELETE CASCADE",
+            references=Reference("sites", "id", on_delete="cascade"),
         ),
         Column(name="timestamp", type_="timestamp with time zone"),
         Column(name="timestamp_virtual", type_="timestamp with time zone"),
@@ -64,15 +65,15 @@ table_main_articles = Table(
         Column(name="url", type_="TEXT"),
         Column(
             name="frontpage_id",
-            references="frontpages (id) ON DELETE CASCADE",
+            references=Reference("frontpages", "id", on_delete="cascade"),
         ),
         Column(
             name="article_id",
-            references="articles (id) ON DELETE CASCADE",
+            references=Reference("articles", "id", on_delete="cascade"),
         ),
         Column(
             name="title_id",
-            references="titles (id) ON DELETE CASCADE",
+            references=Reference("titles", "id", on_delete="cascade"),
         ),
     ],
 )
@@ -84,15 +85,15 @@ table_top_articles = Table(
         Column(name="rank", type_="INTEGER"),
         Column(
             name="frontpage_id",
-            references="frontpages (id) ON DELETE CASCADE",
+            references=Reference("frontpages", "id", on_delete="cascade"),
         ),
         Column(
             name="article_id",
-            references="articles (id) ON DELETE CASCADE",
+            references=Reference("articles", "id", on_delete="cascade"),
         ),
         Column(
             name="title_id",
-            references="titles (id) ON DELETE CASCADE",
+            references=Reference("titles", "id", on_delete="cascade"),
         ),
     ],
 )
@@ -100,7 +101,9 @@ table_embeddings = Table(
     name="embeddings",
     columns=[
         Column(name="id", primary_key=True),
-        Column(name="title_id", references="titles (id) ON DELETE CASCADE"),
+        Column(
+            name="title_id", references=Reference("titles", "id", on_delete="cascade")
+        ),
         Column(name="vector", type_="bytea"),
     ],
 )
