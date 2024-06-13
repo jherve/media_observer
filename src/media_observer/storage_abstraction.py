@@ -5,9 +5,12 @@ from attrs import frozen
 
 @frozen
 class UniqueIndex:
-    name: str
     table: str
     columns: list[str]
+
+    @property
+    def name(self):
+        return f"{self.table}_unique_idx_{'_'.join(self.columns)}"
 
     async def create_if_not_exists(self, conn):
         cols = ",".join(self.columns)

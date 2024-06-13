@@ -214,41 +214,15 @@ class Storage(StorageAbc):
     ]
 
     indexes = [
+        UniqueIndex(table="sites", columns=["name"]),
+        UniqueIndex(table="snapshots", columns=["timestamp_virtual", "site_id"]),
+        UniqueIndex(table="articles", columns=["url"]),
+        UniqueIndex(table="titles", columns=["text"]),
+        UniqueIndex(table="main_articles", columns=["snapshot_id", "article_id"]),
         UniqueIndex(
-            name="sites_unique_name",
-            table="sites",
-            columns=["name"],
+            table="top_articles", columns=["snapshot_id", "article_id", "rank"]
         ),
-        UniqueIndex(
-            name="snapshots_unique_timestamp_virtual_site_id",
-            table="snapshots",
-            columns=["timestamp_virtual", "site_id"],
-        ),
-        UniqueIndex(
-            name="articles_unique_url",
-            table="articles",
-            columns=["url"],
-        ),
-        UniqueIndex(
-            name="titles_unique_text",
-            table="titles",
-            columns=["text"],
-        ),
-        UniqueIndex(
-            name="main_articles_unique_idx_snapshot_id_article_id",
-            table="main_articles",
-            columns=["snapshot_id", "article_id"],
-        ),
-        UniqueIndex(
-            name="top_articles_unique_idx_snapshot_id_article_id_rank",
-            table="top_articles",
-            columns=["snapshot_id", "article_id", "rank"],
-        ),
-        UniqueIndex(
-            name="embeddings_unique_title_id",
-            table="embeddings",
-            columns=["title_id"],
-        ),
+        UniqueIndex(table="embeddings", columns=["title_id"]),
     ]
 
     def __init__(self, backend):
