@@ -1,5 +1,6 @@
 import asyncio
 import traceback
+import os
 import tempfile
 import urllib.parse
 from pathlib import Path
@@ -21,6 +22,8 @@ from media_observer.storage import Storage
 from media_observer.worker import Job, Worker, JobQueue
 from config import settings
 
+
+tmpdir = Path(tempfile.mkdtemp(prefix="media_observer"))
 idx = 0
 
 
@@ -162,22 +165,24 @@ class ParseWorker(Worker):
             ]
         except Exception as e:
             snapshot = job.snapshot
-            tmpdir_prefix = urllib.parse.quote_plus(
-                f"le_monde_{snapshot.id.original}_{snapshot.id.timestamp}"
+            sub_dir = (
+                tmpdir
+                / urllib.parse.quote_plus(snapshot.id.original)
+                / urllib.parse.quote_plus(str(snapshot.id.timestamp))
             )
-            tmpdir = Path(tempfile.mkdtemp(prefix=tmpdir_prefix))
+            os.makedirs(sub_dir)
 
-            with open(tmpdir / "snapshot.html", "w") as f:
+            with open(sub_dir / "snapshot.html", "w") as f:
                 f.write(snapshot.text)
-            with open(tmpdir / "exception.txt", "w") as f:
+            with open(sub_dir / "exception.txt", "w") as f:
                 f.writelines(traceback.format_exception(e))
-            with open(tmpdir / "url.txt", "w") as f:
+            with open(sub_dir / "url.txt", "w") as f:
                 f.write(snapshot.id.url)
 
             self._log(
                 "ERROR",
                 job,
-                f"Error while parsing snapshot from {snapshot.id.url}, details were written in directory {tmpdir}",
+                f"Error while parsing snapshot from {snapshot.id.url}, details were written in directory {sub_dir}",
             )
             raise e
 
