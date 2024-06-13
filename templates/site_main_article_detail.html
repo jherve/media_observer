@@ -8,7 +8,7 @@
 </head>
 <body>
     {% macro url_to_article_page(a) -%}
-        {{ url_for('site_main_article_snapshot', id=a['site_id'], timestamp=a['timestamp_virtual']) }}
+        {{ url_for('site_main_article_frontpage', id=a['site_id'], timestamp=a['timestamp_virtual']) }}
     {%- endmacro %}
 
     {% macro article(a) -%}

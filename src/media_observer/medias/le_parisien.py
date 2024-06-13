@@ -3,11 +3,11 @@ from bs4 import BeautifulSoup
 from media_observer.article import (
     TopArticle,
     MainArticle,
-    MainPage,
+    FrontPage,
 )
 
 
-class LeParisienMainPage(MainPage):
+class LeParisienFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup: BeautifulSoup):
         all_articles = soup.select("a[data-block-name='Les_plus_lus']")

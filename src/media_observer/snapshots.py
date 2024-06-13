@@ -9,7 +9,7 @@ from attrs import frozen
 from loguru import logger
 
 
-from media_observer.article import ArchiveCollection, MainPage
+from media_observer.article import ArchiveCollection, FrontPage
 from media_observer.internet_archive import (
     InternetArchiveClient,
     InternetArchiveSnapshot,
@@ -76,7 +76,7 @@ class SnapshotParseJob(Job):
 
 @frozen
 class SnapshotStoreJob(Job):
-    page: MainPage
+    page: FrontPage
     collection: ArchiveCollection
     dt: datetime
 
@@ -91,7 +91,7 @@ class SearchWorker(Worker):
         collection = job.collection
         dt = job.dt
 
-        if await self.storage.exists_snapshot(collection.name, dt):
+        if await self.storage.exists_frontpage(collection.name, dt):
             return None, []
 
         self._log(
@@ -156,7 +156,7 @@ class ParseWorker(Worker):
 
     async def execute(self, job: SnapshotParseJob):
         try:
-            main_page = await job.collection.MainPageClass.from_snapshot(job.snapshot)
+            main_page = await job.collection.FrontPageClass.from_snapshot(job.snapshot)
             return main_page, [
                 SnapshotStoreJob(job.id_, main_page, job.collection, job.dt)
             ]

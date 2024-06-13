@@ -182,7 +182,7 @@ class InternetArchiveClient:
 
         return [to_snapshot_id(line) for line in resp.splitlines()]
 
-    async def fetch(self, id_: InternetArchiveSnapshotId) -> str:
+    async def fetch(self, id_: InternetArchiveSnapshotId) -> InternetArchiveSnapshot:
         resp = await self._get(id_.url)
         return InternetArchiveSnapshot(id_, resp)
 

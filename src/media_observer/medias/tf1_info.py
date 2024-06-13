@@ -3,17 +3,17 @@ from bs4 import BeautifulSoup
 from media_observer.article import (
     TopArticle,
     MainArticle,
-    MainPage,
+    FrontPage,
 )
 
 
-class Tf1InfoMainPage(MainPage):
+class Tf1InfoFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup: BeautifulSoup):
         all_articles = soup.select("#AllNews__List__0 .AllNewsItem .LinkArticle")
 
         return [
-            Tf1InfoMainPage._get_top_article(a, idx)
+            Tf1InfoFrontPage._get_top_article(a, idx)
             for idx, a in enumerate(all_articles)
         ]
 

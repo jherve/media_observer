@@ -5,9 +5,9 @@ from yarl import URL
 
 from config import settings
 from media_observer.article import (
-    TopArticle,
-    FeaturedArticleSnapshot,
-    FeaturedArticle,
+    ArchiveCollection,
+    FrontPage,
+    Article,
 )
 from media_observer.storage_abstraction import (
     Table,
@@ -29,8 +29,8 @@ table_sites = Table(
         Column(name="original_url", type_="TEXT"),
     ],
 )
-table_snapshots = Table(
-    name="snapshots",
+table_frontpages = Table(
+    name="frontpages",
     columns=[
         Column(name="id", primary_key=True),
         Column(
@@ -63,8 +63,8 @@ table_main_articles = Table(
         Column(name="id", primary_key=True),
         Column(name="url", type_="TEXT"),
         Column(
-            name="snapshot_id",
-            references="snapshots (id) ON DELETE CASCADE",
+            name="frontpage_id",
+            references="frontpages (id) ON DELETE CASCADE",
         ),
         Column(
             name="article_id",
@@ -83,8 +83,8 @@ table_top_articles = Table(
         Column(name="url", type_="TEXT"),
         Column(name="rank", type_="INTEGER"),
         Column(
-            name="snapshot_id",
-            references="snapshots (id) ON DELETE CASCADE",
+            name="frontpage_id",
+            references="frontpages (id) ON DELETE CASCADE",
         ),
         Column(
             name="article_id",
@@ -104,8 +104,8 @@ table_embeddings = Table(
         Column(name="vector", type_="bytea"),
     ],
 )
-view_snapshots_view = View(
-    name="snapshots_view",
+view_frontpages = View(
+    name="frontpages_view",
     column_names=[
         "id",
         "site_id",
@@ -123,21 +123,21 @@ view_snapshots_view = View(
             s.timestamp,
             s.timestamp_virtual
         FROM
-            snapshots AS s
+            frontpages AS s
         JOIN
             sites AS si ON si.id = s.site_id
         """,
 )
-view_main_page_apparitions = View(
-    name="main_page_apparitions",
+view_articles = View(
+    name="articles_view",
     column_names=[
         "id",
         "title",
         "title_id",
         "url_archive",
         "url_article",
-        "main_in_snapshot_id",
-        "top_in_snapshot_id",
+        "main_in_frontpage_id",
+        "top_in_frontpage_id",
         "rank",
     ],
     create_stmt="""
@@ -147,8 +147,8 @@ view_main_page_apparitions = View(
             t.id AS title_id,
             ma.url AS url_archive,
             a.url AS url_article,
-            ma.snapshot_id AS main_in_snapshot_id,
-            NULL AS top_in_snapshot_id,
+            ma.frontpage_id AS main_in_frontpage_id,
+            NULL AS top_in_frontpage_id,
             NULL AS rank
         FROM articles a
         JOIN main_articles ma ON ma.article_id = a.id
@@ -162,18 +162,18 @@ view_main_page_apparitions = View(
             t.id AS title_id,
             ta.url AS url_archive,
             a.url AS url_article,
-            NULL AS main_in_snapshot_id,
-            ta.snapshot_id AS top_in_snapshot_id,
+            NULL AS main_in_frontpage_id,
+            ta.frontpage_id AS top_in_frontpage_id,
             ta.rank
         FROM articles a
         JOIN top_articles ta ON ta.article_id = a.id
         JOIN titles t ON t.id = ta.title_id
         """,
 )
-view_snapshot_apparitions = View(
-    name="snapshot_apparitions",
+view_articles_on_frontpage = View(
+    name="articles_on_frontpage_view",
     column_names=[
-        "snapshot_id",
+        "frontpage_id",
         "site_id",
         "site_name",
         "site_original_url",
@@ -189,21 +189,21 @@ view_snapshot_apparitions = View(
     ],
     create_stmt="""
         SELECT
-            sv.id AS snapshot_id,
-            sv.site_id,
-            sv.site_name,
-            sv.site_original_url,
-            sv."timestamp",
-            sv.timestamp_virtual,
-            mpa.id AS article_id,
-            mpa.title,
-            mpa.title_id,
-            mpa.url_archive,
-            mpa.url_article,
-            mpa.main_in_snapshot_id IS NOT NULL AS is_main,
-            mpa.rank
-        FROM main_page_apparitions mpa
-        JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
+            fpv.id AS frontpage_id,
+            fpv.site_id,
+            fpv.site_name,
+            fpv.site_original_url,
+            fpv."timestamp",
+            fpv.timestamp_virtual,
+            av.id AS article_id,
+            av.title,
+            av.title_id,
+            av.url_archive,
+            av.url_article,
+            av.main_in_frontpage_id IS NOT NULL AS is_main,
+            av.rank
+        FROM articles_view av
+        JOIN frontpages_view fpv ON fpv.id = av.main_in_frontpage_id OR fpv.id = av.top_in_frontpage_id
     """,
 )
 
@@ -211,7 +211,7 @@ view_snapshot_apparitions = View(
 class Storage(StorageAbc):
     tables = [
         table_sites,
-        table_snapshots,
+        table_frontpages,
         table_articles,
         table_titles,
         table_main_articles,
@@ -220,19 +220,19 @@ class Storage(StorageAbc):
     ]
 
     views = [
-        view_snapshots_view,
-        view_main_page_apparitions,
-        view_snapshot_apparitions,
+        view_frontpages,
+        view_articles,
+        view_articles_on_frontpage,
     ]
 
     indexes = [
         UniqueIndex(table="sites", columns=["name"]),
-        UniqueIndex(table="snapshots", columns=["timestamp_virtual", "site_id"]),
+        UniqueIndex(table="frontpages", columns=["timestamp_virtual", "site_id"]),
         UniqueIndex(table="articles", columns=["url"]),
         UniqueIndex(table="titles", columns=["text"]),
-        UniqueIndex(table="main_articles", columns=["snapshot_id", "article_id"]),
+        UniqueIndex(table="main_articles", columns=["frontpage_id", "article_id"]),
         UniqueIndex(
-            table="top_articles", columns=["snapshot_id", "article_id", "rank"]
+            table="top_articles", columns=["frontpage_id", "article_id", "rank"]
         ),
         UniqueIndex(table="embeddings", columns=["title_id"]),
     ]
@@ -275,13 +275,13 @@ class Storage(StorageAbc):
             for v in self.views:
                 await v.create_if_not_exists(conn)
 
-    async def exists_snapshot(self, name: str, dt: datetime):
+    async def exists_frontpage(self, name: str, dt: datetime):
         async with self.backend.get_connection() as conn:
             exists = await conn.execute_fetchall(
                 """
                     SELECT 1
-                    FROM snapshots snap
-                    JOIN sites s ON s.id = snap.site_id
+                    FROM frontpages f
+                    JOIN sites s ON s.id = f.site_id
                     WHERE s.name = $1 AND timestamp_virtual = $2
                 """,
                 name,
@@ -306,7 +306,7 @@ class Storage(StorageAbc):
                 [row] = await conn.execute_fetchall(
                     """
                     SELECT timestamp_virtual
-                    FROM snapshots_view
+                    FROM frontpages_view
                     WHERE site_id = $1
                     ORDER BY timestamp_virtual DESC
                     LIMIT 1
@@ -321,24 +321,24 @@ class Storage(StorageAbc):
             #   *the article published just before, on the same site
             main_articles = await conn.execute_fetchall(
                 """
-                WITH sav_diff AS (
-                    SELECT sav.*, EXTRACT(EPOCH FROM sav.timestamp_virtual - $2) :: integer AS time_diff
-                    FROM snapshot_apparitions sav
+                WITH aof_diff AS (
+                    SELECT aof.*, EXTRACT(EPOCH FROM aof.timestamp_virtual - $2) :: integer AS time_diff
+                    FROM articles_on_frontpage_view aof
                 )
                 SELECT * FROM (
-                    SELECT * FROM sav_diff
+                    SELECT * FROM aof_diff
                     WHERE is_main AND time_diff = 0
                 )
                 UNION ALL
                 SELECT * FROM (
-                    SELECT * FROM sav_diff
+                    SELECT * FROM aof_diff
                     WHERE is_main AND site_id = $1 AND time_diff > 0
                     ORDER BY time_diff
                     LIMIT 1
                 )
                 UNION ALL
                 SELECT * FROM (
-                    SELECT * FROM sav_diff
+                    SELECT * FROM aof_diff
                     WHERE is_main AND site_id = $1 AND time_diff < 0
                     ORDER BY time_diff DESC
                     LIMIT 1
@@ -349,7 +349,7 @@ class Storage(StorageAbc):
             )
 
             return [
-                self._from_row(a, self._view_by_name["snapshot_apparitions"])
+                self._from_row(a, self._view_by_name["articles_on_frontpage_view"])
                 | {"time_diff": a[13]}
                 for a in main_articles
             ]
@@ -375,7 +375,7 @@ class Storage(StorageAbc):
 
             return [self._from_embeddings_row(r) for r in rows]
 
-    async def list_snapshot_apparitions(self, title_ids: list[int]):
+    async def list_articles_on_frontpage(self, title_ids: list[int]):
         if len(title_ids) == 0:
             return []
 
@@ -383,14 +383,14 @@ class Storage(StorageAbc):
             rows = await conn.execute_fetchall(
                 f"""
                     SELECT *
-                    FROM snapshot_apparitions
+                    FROM articles_on_frontpage_view
                     WHERE title_id IN ({self._placeholders(*title_ids)})
                 """,
                 *title_ids,
             )
 
             return [
-                self._from_row(r, self._view_by_name["snapshot_apparitions"])
+                self._from_row(r, self._view_by_name["articles_on_frontpage_view"])
                 for r in rows
             ]
 
@@ -418,13 +418,15 @@ class Storage(StorageAbc):
             sites = await conn.execute_fetchall("SELECT * FROM sites")
             return [self._from_row(s, self._table_by_name["sites"]) for s in sites]
 
-    async def add_page(self, collection, page, dt):
+    async def add_page(
+        self, collection: ArchiveCollection, page: FrontPage, dt: datetime
+    ):
         assert dt.tzinfo is not None
 
         async with self.backend.get_connection() as conn:
             async with conn.transaction():
                 site_id = await self._add_site(conn, collection.name, collection.url)
-                snapshot_id = await self._add_snapshot(
+                frontpage_id = await self._add_frontpage(
                     conn, site_id, page.snapshot.id, dt
                 )
                 article_id = await self._add_article(
@@ -433,7 +435,7 @@ class Storage(StorageAbc):
                 title_id = await self._add_title(conn, page.main_article.article.title)
                 await self._add_main_article(
                     conn,
-                    snapshot_id,
+                    frontpage_id,
                     article_id,
                     title_id,
                     page.main_article.article.url,
@@ -443,7 +445,7 @@ class Storage(StorageAbc):
                     article_id = await self._add_article(conn, t.article.original)
                     title_id = await self._add_title(conn, t.article.title)
                     await self._add_top_article(
-                        conn, snapshot_id, article_id, title_id, t.article.url, t.rank
+                        conn, frontpage_id, article_id, title_id, t.article.url, t.rank
                     )
 
         return site_id
@@ -457,13 +459,13 @@ class Storage(StorageAbc):
             [name],
         )
 
-    async def _add_snapshot(
+    async def _add_frontpage(
         self, conn, site_id: int, snapshot: InternetArchiveSnapshotId, virtual: datetime
     ) -> int:
         return await self._insert_or_get(
             conn,
             self._insert_stmt(
-                "snapshots",
+                "frontpages",
                 [
                     "timestamp",
                     "site_id",
@@ -473,11 +475,11 @@ class Storage(StorageAbc):
                 ],
             ),
             [snapshot.timestamp, site_id, virtual, snapshot.original, snapshot.url],
-            "SELECT id FROM snapshots WHERE timestamp_virtual = $1 AND site_id = $2",
+            "SELECT id FROM frontpages WHERE timestamp_virtual = $1 AND site_id = $2",
             [virtual, site_id],
         )
 
-    async def _add_article(self, conn, article: FeaturedArticle):
+    async def _add_article(self, conn, article: Article):
         return await self._insert_or_get(
             conn,
             self._insert_stmt("articles", ["url"]),
@@ -496,13 +498,13 @@ class Storage(StorageAbc):
         )
 
     async def _add_main_article(
-        self, conn, snapshot_id: int, article_id: int, title_id: int, url: str
+        self, conn, frontpage_id: int, article_id: int, title_id: int, url: URL
     ):
         await conn.execute_insert(
             self._insert_stmt(
-                "main_articles", ["snapshot_id", "article_id", "title_id", "url"]
+                "main_articles", ["frontpage_id", "article_id", "title_id", "url"]
             ),
-            snapshot_id,
+            frontpage_id,
             article_id,
             title_id,
             str(url),
@@ -511,18 +513,18 @@ class Storage(StorageAbc):
     async def _add_top_article(
         self,
         conn,
-        snapshot_id: int,
+        frontpage_id: int,
         article_id: int,
         title_id: int,
-        url: str,
+        url: URL,
         rank: int,
     ):
         await conn.execute_insert(
             self._insert_stmt(
                 "top_articles",
-                ["snapshot_id", "article_id", "title_id", "url", "rank"],
+                ["frontpage_id", "article_id", "title_id", "url", "rank"],
             ),
-            snapshot_id,
+            frontpage_id,
             article_id,
             title_id,
             str(url),

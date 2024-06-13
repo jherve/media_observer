@@ -23,15 +23,15 @@ def url_has_scheme(instance, attribute, value: URL):
 
 
 @frozen
-class FeaturedArticle:
+class Article:
     url: URL = field(validator=[url_is_absolute, url_has_scheme])
 
 
 @frozen
-class FeaturedArticleSnapshot(ABC):
+class ArticleSnapshot(ABC):
     title: str = field(validator=validators.min_len(1))
     url: URL = field(validator=[url_is_absolute, url_has_scheme])
-    original: FeaturedArticle
+    original: Article
 
     @classmethod
     def create(cls, title, url):
@@ -66,28 +66,28 @@ class FeaturedArticleSnapshot(ABC):
 
 @frozen
 class TopArticle(ABC):
-    article: FeaturedArticleSnapshot
+    article: ArticleSnapshot
     rank: int
 
     @classmethod
     def create(cls, title, url, rank):
-        article = FeaturedArticleSnapshot.create(title, url)
+        article = ArticleSnapshot.create(title, url)
         attrs = {"article": cattrs.unstructure(article), "rank": rank}
         return cattrs.structure(attrs, cls)
 
 
 @frozen
 class MainArticle(ABC):
-    article: FeaturedArticleSnapshot
+    article: ArticleSnapshot
 
     @classmethod
     def create(cls, title, url):
-        article = FeaturedArticleSnapshot.create(title, url)
+        article = ArticleSnapshot.create(title, url)
         return cls(article)
 
 
 @frozen
-class MainPage(ABC):
+class FrontPage(ABC):
     snapshot: InternetArchiveSnapshot
     soup: BeautifulSoup = field(repr=False)
     top_articles: list[TopArticle]
@@ -116,7 +116,7 @@ class ArchiveCollection:
     name: str
     url: str
     tz: ZoneInfo
-    MainPageClass: type[MainPage]
+    FrontPageClass: type[FrontPage]
     logo_background_color: str
     logo_src: str | None = None
     logo_content: str | None = None

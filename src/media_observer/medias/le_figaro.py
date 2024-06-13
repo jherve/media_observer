@@ -2,12 +2,12 @@ from bs4 import BeautifulSoup
 
 from media_observer.article import (
     MainArticle,
-    MainPage,
+    FrontPage,
     to_text,
 )
 
 
-class LeFigaroMainPage(MainPage):
+class LeFigaroFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup: BeautifulSoup):
         # Le Figaro does not have such a view on its frontpage

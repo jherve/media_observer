@@ -90,7 +90,7 @@ async def index(request: Request, storage: Storage = Depends(get_db)):
 
 @app.get("/sites/{id}/main_article", response_class=HTMLResponse)
 @app.get("/sites/{id}/main_article/{timestamp}", response_class=HTMLResponse)
-async def site_main_article_snapshot(
+async def site_main_article_frontpage(
     request: Request,
     id: int,
     timestamp: datetime | None = None,
@@ -128,7 +128,7 @@ async def site_main_article_snapshot(
         similar = []
 
     similar_by_id = {s[0]: s[1] for s in similar}
-    similar_articles = await storage.list_snapshot_apparitions(
+    similar_articles = await storage.list_articles_on_frontpage(
         list(similar_by_id.keys())
     )
     # A list of articles and score, sorted by descending score

@@ -1,12 +1,12 @@
 from media_observer.article import (
     TopArticle,
     MainArticle,
-    MainPage,
+    FrontPage,
     to_text,
 )
 
 
-class BfmTvMainPage(MainPage):
+class BfmTvFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup):
         all_articles = soup.select("section[id*='top_contenus'] li > a")

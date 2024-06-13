@@ -1,12 +1,12 @@
 from media_observer.article import (
     TopArticle,
     MainArticle,
-    MainPage,
+    FrontPage,
     to_text,
 )
 
 
-class FranceTvInfoMainPage(MainPage):
+class FranceTvInfoFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup):
         def to_href(article, selector):
