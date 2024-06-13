@@ -21,196 +21,208 @@ from media_observer.db.postgres import PostgresBackend
 from media_observer.internet_archive import InternetArchiveSnapshotId
 
 
+table_sites = Table(
+    name="sites",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="name", type_="TEXT"),
+        Column(name="original_url", type_="TEXT"),
+    ],
+)
+table_snapshots = Table(
+    name="snapshots",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(
+            name="site_id",
+            references="sites (id) ON DELETE CASCADE",
+        ),
+        Column(name="timestamp", type_="timestamp with time zone"),
+        Column(name="timestamp_virtual", type_="timestamp with time zone"),
+        Column(name="url_original", type_="TEXT"),
+        Column(name="url_snapshot", type_="TEXT"),
+    ],
+)
+table_articles = Table(
+    name="articles",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="url", type_="TEXT"),
+    ],
+)
+table_titles = Table(
+    name="titles",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="text", type_="TEXT"),
+    ],
+)
+table_main_articles = Table(
+    name="main_articles",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="url", type_="TEXT"),
+        Column(
+            name="snapshot_id",
+            references="snapshots (id) ON DELETE CASCADE",
+        ),
+        Column(
+            name="article_id",
+            references="articles (id) ON DELETE CASCADE",
+        ),
+        Column(
+            name="title_id",
+            references="titles (id) ON DELETE CASCADE",
+        ),
+    ],
+)
+table_top_articles = Table(
+    name="top_articles",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="url", type_="TEXT"),
+        Column(name="rank", type_="INTEGER"),
+        Column(
+            name="snapshot_id",
+            references="snapshots (id) ON DELETE CASCADE",
+        ),
+        Column(
+            name="article_id",
+            references="articles (id) ON DELETE CASCADE",
+        ),
+        Column(
+            name="title_id",
+            references="titles (id) ON DELETE CASCADE",
+        ),
+    ],
+)
+table_embeddings = Table(
+    name="embeddings",
+    columns=[
+        Column(name="id", primary_key=True),
+        Column(name="title_id", references="titles (id) ON DELETE CASCADE"),
+        Column(name="vector", type_="bytea"),
+    ],
+)
+view_snapshots_view = View(
+    name="snapshots_view",
+    column_names=[
+        "id",
+        "site_id",
+        "site_name",
+        "site_original_url",
+        "timestamp",
+        "timestamp_virtual",
+    ],
+    create_stmt="""
+        SELECT
+            s.id,
+            si.id AS site_id,
+            si.name AS site_name,
+            si.original_url AS site_original_url,
+            s.timestamp,
+            s.timestamp_virtual
+        FROM
+            snapshots AS s
+        JOIN
+            sites AS si ON si.id = s.site_id
+        """,
+)
+view_main_page_apparitions = View(
+    name="main_page_apparitions",
+    column_names=[
+        "id",
+        "title",
+        "title_id",
+        "url_archive",
+        "url_article",
+        "main_in_snapshot_id",
+        "top_in_snapshot_id",
+        "rank",
+    ],
+    create_stmt="""
+        SELECT
+            a.id,
+            t.text AS title,
+            t.id AS title_id,
+            ma.url AS url_archive,
+            a.url AS url_article,
+            ma.snapshot_id AS main_in_snapshot_id,
+            NULL AS top_in_snapshot_id,
+            NULL AS rank
+        FROM articles a
+        JOIN main_articles ma ON ma.article_id = a.id
+        JOIN titles t ON t.id = ma.title_id
+
+        UNION ALL
+
+        SELECT
+            a.id,
+            t.text AS title,
+            t.id AS title_id,
+            ta.url AS url_archive,
+            a.url AS url_article,
+            NULL AS main_in_snapshot_id,
+            ta.snapshot_id AS top_in_snapshot_id,
+            ta.rank
+        FROM articles a
+        JOIN top_articles ta ON ta.article_id = a.id
+        JOIN titles t ON t.id = ta.title_id
+        """,
+)
+view_snapshot_apparitions = View(
+    name="snapshot_apparitions",
+    column_names=[
+        "snapshot_id",
+        "site_id",
+        "site_name",
+        "site_original_url",
+        "timestamp",
+        "timestamp_virtual",
+        "article_id",
+        "title",
+        "title_id",
+        "url_archive",
+        "url_article",
+        "is_main",
+        "rank",
+    ],
+    create_stmt="""
+        SELECT
+            sv.id AS snapshot_id,
+            sv.site_id,
+            sv.site_name,
+            sv.site_original_url,
+            sv."timestamp",
+            sv.timestamp_virtual,
+            mpa.id AS article_id,
+            mpa.title,
+            mpa.title_id,
+            mpa.url_archive,
+            mpa.url_article,
+            mpa.main_in_snapshot_id IS NOT NULL AS is_main,
+            mpa.rank
+        FROM main_page_apparitions mpa
+        JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
+    """,
+)
+
+
 class Storage(StorageAbc):
     tables = [
-        Table(
-            name="sites",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="name", type_="TEXT"),
-                Column(name="original_url", type_="TEXT"),
-            ],
-        ),
-        Table(
-            name="snapshots",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(
-                    name="site_id",
-                    references="sites (id) ON DELETE CASCADE",
-                ),
-                Column(name="timestamp", type_="timestamp with time zone"),
-                Column(name="timestamp_virtual", type_="timestamp with time zone"),
-                Column(name="url_original", type_="TEXT"),
-                Column(name="url_snapshot", type_="TEXT"),
-            ],
-        ),
-        Table(
-            name="articles",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="url", type_="TEXT"),
-            ],
-        ),
-        Table(
-            name="titles",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="text", type_="TEXT"),
-            ],
-        ),
-        Table(
-            name="main_articles",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="url", type_="TEXT"),
-                Column(
-                    name="snapshot_id",
-                    references="snapshots (id) ON DELETE CASCADE",
-                ),
-                Column(
-                    name="article_id",
-                    references="articles (id) ON DELETE CASCADE",
-                ),
-                Column(
-                    name="title_id",
-                    references="titles (id) ON DELETE CASCADE",
-                ),
-            ],
-        ),
-        Table(
-            name="top_articles",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="url", type_="TEXT"),
-                Column(name="rank", type_="INTEGER"),
-                Column(
-                    name="snapshot_id",
-                    references="snapshots (id) ON DELETE CASCADE",
-                ),
-                Column(
-                    name="article_id",
-                    references="articles (id) ON DELETE CASCADE",
-                ),
-                Column(
-                    name="title_id",
-                    references="titles (id) ON DELETE CASCADE",
-                ),
-            ],
-        ),
-        Table(
-            name="embeddings",
-            columns=[
-                Column(name="id", primary_key=True),
-                Column(name="title_id", references="titles (id) ON DELETE CASCADE"),
-                Column(name="vector", type_="bytea"),
-            ],
-        ),
+        table_sites,
+        table_snapshots,
+        table_articles,
+        table_titles,
+        table_main_articles,
+        table_top_articles,
+        table_embeddings,
     ]
 
     views = [
-        View(
-            name="snapshots_view",
-            column_names=[
-                "id",
-                "site_id",
-                "site_name",
-                "site_original_url",
-                "timestamp",
-                "timestamp_virtual",
-            ],
-            create_stmt="""
-                SELECT
-                    s.id,
-                    si.id AS site_id,
-                    si.name AS site_name,
-                    si.original_url AS site_original_url,
-                    s.timestamp,
-                    s.timestamp_virtual
-                FROM
-                    snapshots AS s
-                JOIN
-                    sites AS si ON si.id = s.site_id
-                """,
-        ),
-        View(
-            name="main_page_apparitions",
-            column_names=[
-                "id",
-                "title",
-                "title_id",
-                "url_archive",
-                "url_article",
-                "main_in_snapshot_id",
-                "top_in_snapshot_id",
-                "rank",
-            ],
-            create_stmt="""
-                SELECT
-                    a.id,
-                    t.text AS title,
-                    t.id AS title_id,
-                    ma.url AS url_archive,
-                    a.url AS url_article,
-                    ma.snapshot_id AS main_in_snapshot_id,
-                    NULL AS top_in_snapshot_id,
-                    NULL AS rank
-                FROM articles a
-                JOIN main_articles ma ON ma.article_id = a.id
-                JOIN titles t ON t.id = ma.title_id
-
-                UNION ALL
-
-                SELECT
-                    a.id,
-                    t.text AS title,
-                    t.id AS title_id,
-                    ta.url AS url_archive,
-                    a.url AS url_article,
-                    NULL AS main_in_snapshot_id,
-                    ta.snapshot_id AS top_in_snapshot_id,
-                    ta.rank
-                FROM articles a
-                JOIN top_articles ta ON ta.article_id = a.id
-                JOIN titles t ON t.id = ta.title_id
-                """,
-        ),
-        View(
-            name="snapshot_apparitions",
-            column_names=[
-                "snapshot_id",
-                "site_id",
-                "site_name",
-                "site_original_url",
-                "timestamp",
-                "timestamp_virtual",
-                "article_id",
-                "title",
-                "title_id",
-                "url_archive",
-                "url_article",
-                "is_main",
-                "rank",
-            ],
-            create_stmt="""
-                SELECT
-                    sv.id AS snapshot_id,
-                    sv.site_id,
-                    sv.site_name,
-                    sv.site_original_url,
-                    sv."timestamp",
-                    sv.timestamp_virtual,
-                    mpa.id AS article_id,
-                    mpa.title,
-                    mpa.title_id,
-                    mpa.url_archive,
-                    mpa.url_article,
-                    mpa.main_in_snapshot_id IS NOT NULL AS is_main,
-                    mpa.rank
-                FROM main_page_apparitions mpa
-                JOIN snapshots_view sv ON sv.id = mpa.main_in_snapshot_id OR sv.id = mpa.top_in_snapshot_id
-            """,
-        ),
+        view_snapshots_view,
+        view_main_page_apparitions,
+        view_snapshot_apparitions,
     ]
 
     indexes = [
