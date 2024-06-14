@@ -1,4 +1,5 @@
 import asyncio
+from uuid import UUID
 from attrs import frozen
 from loguru import logger
 from abc import ABC, abstractmethod
@@ -7,7 +8,7 @@ from typing import Any, ClassVar
 
 @frozen
 class Job(ABC):
-    id_: int
+    id_: UUID
 
 
 class JobQueue:
@@ -69,4 +70,4 @@ class Worker(ABC):
             self.queue.task_done(self.type_)
 
     def _log(self, level: str, job: Job, msg: str):
-        logger.log(level, f"[{job.id_: <3}] {msg}")
+        logger.log(level, f"[{job.id_}] {msg}")

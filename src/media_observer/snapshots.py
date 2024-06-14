@@ -1,4 +1,5 @@
 import asyncio
+from uuid import uuid1
 import traceback
 import os
 import tempfile
@@ -28,9 +29,7 @@ idx = 0
 
 
 def unique_id():
-    global idx
-    idx = idx + 1
-    return idx
+    return uuid1()
 
 
 @frozen
