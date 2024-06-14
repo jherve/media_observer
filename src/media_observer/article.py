@@ -9,7 +9,16 @@ from zoneinfo import ZoneInfo
 from media_observer.internet_archive import InternetArchiveSnapshot
 
 
+def structure_str(s, _):
+    if not isinstance(s, str):
+        raise ValueError(f"Expected str, got {s}")
+    return s
+
+
 cattrs.register_structure_hook(URL, lambda v, _: URL(v))
+# Oddly enough an extra check is required so ensure that str values are not None
+# https://github.com/python-attrs/cattrs/issues/26#issuecomment-358594015
+cattrs.register_structure_hook(str, structure_str)
 
 
 def url_is_absolute(instance, attribute, value: URL):
