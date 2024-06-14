@@ -2,7 +2,7 @@ import asyncio
 from abc import ABC, abstractmethod
 from attrs import frozen, field, validators
 import cattrs
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, ResultSet
 from yarl import URL
 from zoneinfo import ZoneInfo
 
@@ -95,25 +95,59 @@ class MainArticle(ABC):
         return cls(article)
 
 
+class MagnificentSoup(BeautifulSoup):
+    def select(self, *args, **kwargs):
+        def to_magnificient(soup):
+            soup.__class__ = MagnificentSoup
+            return soup
+
+        return ResultSet(
+            None, [to_magnificient(s) for s in super().select(*args, **kwargs)]
+        )
+
+    def select_first(self, selector: str) -> "MagnificentSoup":
+        try:
+            soup = self.select(selector)[0]
+            soup.__class__ = MagnificentSoup
+            return soup
+        except IndexError:
+            raise ValueError(f"Could not find {selector}")
+
+    def select_unique(self, selector: str) -> "MagnificentSoup":
+        match self.select(selector):
+            case [soup]:
+                soup.__class__ = MagnificentSoup
+                return soup
+
+            case many_or_zero:
+                raise ValueError(
+                    f"Expected a unique element matching {selector}, found {len(many_or_zero)}"
+                )
+
+    @property
+    def stripped_text(self) -> str:
+        return self.text.strip()
+
+
 @frozen
 class FrontPage(ABC):
     snapshot: InternetArchiveSnapshot
-    soup: BeautifulSoup = field(repr=False)
+    soup: MagnificentSoup = field(repr=False)
     top_articles: list[TopArticle]
     main_article: MainArticle
 
     @staticmethod
     @abstractmethod
-    def get_top_articles(soup: BeautifulSoup) -> list[TopArticle]: ...
+    def get_top_articles(soup: MagnificentSoup) -> list[TopArticle]: ...
 
     @staticmethod
     @abstractmethod
-    def get_main_article(soup: BeautifulSoup) -> MainArticle: ...
+    def get_main_article(soup: MagnificentSoup) -> MainArticle: ...
 
     @classmethod
     async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
         loop = asyncio.get_event_loop()
-        soup = await loop.run_in_executor(None, BeautifulSoup, snapshot.text, "lxml")
+        soup = await loop.run_in_executor(None, MagnificentSoup, snapshot.text, "lxml")
 
         return cls(
             snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
