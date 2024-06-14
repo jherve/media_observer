@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from uuid import uuid1
 import pickle
 import traceback
@@ -207,7 +208,7 @@ class StoreWorker(Worker):
             raise e
 
 
-async def main():
+async def main(jobs):
     storage = await Storage.create()
 
     queue = JobQueue(
@@ -220,9 +221,6 @@ async def main():
     )
 
     logger.info("Starting snapshot service..")
-    jobs = SnapshotSearchJob.create(
-        settings.snapshots.days_in_past, settings.snapshots.hours
-    )
 
     for j in jobs:
         queue.put_nowait(j)
@@ -251,5 +249,21 @@ async def main():
     logger.info("Snapshot service exiting")
 
 
+async def replay(root_dir: Path):
+    jobs = []
+    for pickled_job in root_dir.glob("**/**/*.pickle"):
+        with open(pickled_job, "rb") as f:
+            jobs.append(pickle.load(f))
+
+    await main(jobs)
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        path = Path(sys.argv[1])
+        asyncio.run(replay(path))
+    except IndexError:
+        jobs = SnapshotSearchJob.create(
+            settings.snapshots.days_in_past, settings.snapshots.hours
+        )
+        asyncio.run(main(jobs))
