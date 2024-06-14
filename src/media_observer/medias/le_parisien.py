@@ -14,7 +14,7 @@ class LeParisienFrontPage(FrontPage):
 
         return [
             TopArticle.create(
-                title=a.text.strip(),
+                title=a.stripped_text,
                 url=a["href"],
                 rank=idx + 1,
             )
@@ -23,10 +23,10 @@ class LeParisienFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select(".homepage__top article")[0]
-        url = main.select("a")[0]
+        main = soup.select_first(".homepage__top article")
+        url = main.select_first("a")
 
         return MainArticle.create(
-            title=url.text.strip(),
+            title=url.stripped_text,
             url=url["href"],
         )

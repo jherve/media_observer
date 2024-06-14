@@ -2,7 +2,6 @@ from media_observer.article import (
     TopArticle,
     MainArticle,
     FrontPage,
-    to_text,
 )
 
 
@@ -12,7 +11,7 @@ class BfmTvFrontPage(FrontPage):
         all_articles = soup.select("section[id*='top_contenus'] li > a")
         return [
             TopArticle.create(
-                title=to_text(a, "h3"),
+                title=a.select_unique("h3").stripped_text,
                 url=a["href"],
                 rank=idx + 1,
             )
@@ -21,12 +20,8 @@ class BfmTvFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        def to_href(soup):
-            link = soup.select("a")[0]
-            return link["href"]
-
-        [main] = soup.select("article.une_item")
+        main = soup.select_unique("article.une_item")
         return MainArticle.create(
-            title=to_text(main, "h2.title_une_item"),
-            url=to_href(main),
+            title=main.select_unique("h2.title_une_item").stripped_text,
+            url=main.select_first("a")["href"],
         )

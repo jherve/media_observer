@@ -4,7 +4,6 @@ from media_observer.article import (
     TopArticle,
     MainArticle,
     FrontPage,
-    to_text,
 )
 
 
@@ -15,7 +14,7 @@ class CNewsFrontPage(FrontPage):
 
         return [
             TopArticle.create(
-                title=to_text(a, "h3.dm-letop-title"),
+                title=a.select_unique("h3.dm-letop-title").stripped_text,
                 url=a["href"],
                 rank=idx + 1,
             )
@@ -24,10 +23,10 @@ class CNewsFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select("div.dm-block")[0]
-        [url] = main.select("a")
+        main = soup.select_first("div.dm-block")
+        url = main.select_unique("a")
 
         return MainArticle.create(
-            title=to_text(main, "h2.dm-news-title"),
+            title=main.select_unique("h2.dm-news-title").stripped_text,
             url=url["href"],
         )

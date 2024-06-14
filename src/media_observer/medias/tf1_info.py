@@ -19,19 +19,19 @@ class Tf1InfoFrontPage(FrontPage):
 
     @staticmethod
     def _get_top_article(soup: BeautifulSoup, idx: int):
-        [a] = soup.select("a")
+        a = soup.select_unique("a")
         return TopArticle.create(
-            title=a.text.strip(),
+            title=a.stripped_text,
             url=a["href"],
             rank=idx + 1,
         )
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select("#headlineid .ArticleCard__Title")[0]
-        [url] = main.select("a")
+        main = soup.select_first("#headlineid .ArticleCard__Title")
+        url = main.select_unique("a")
 
         return MainArticle.create(
-            title=url.text.strip(),
+            title=url.stripped_text,
             url=url["href"],
         )

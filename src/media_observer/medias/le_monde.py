@@ -2,7 +2,6 @@ from media_observer.article import (
     TopArticle,
     MainArticle,
     FrontPage,
-    to_text,
 )
 
 
@@ -12,8 +11,8 @@ class LeMondeFrontPage(FrontPage):
         all_articles = soup.select("div.top-article")
         return [
             TopArticle.create(
-                title=a.text.strip(),
-                url=a.find("a")["href"],
+                title=a.stripped_text,
+                url=a.select_unique("a")["href"],
                 rank=idx + 1,
             )
             for idx, a in enumerate(all_articles)
@@ -21,12 +20,8 @@ class LeMondeFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        def to_href(soup):
-            link = soup.select("a")[0]
-            return link["href"]
-
-        [main] = soup.select("div.article--main")
+        main = soup.select_unique("div.article--main")
         return MainArticle.create(
-            title=to_text(main, "p.article__title-label"),
-            url=to_href(main),
+            title=main.select_unique("p.article__title-label").stripped_text,
+            url=main.select_first("a")["href"],
         )

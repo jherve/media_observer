@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 from media_observer.article import (
     MainArticle,
     FrontPage,
-    to_text,
 )
 
 
@@ -16,10 +15,10 @@ class LeFigaroFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        main = soup.select(".fig-main .fig-ensemble__first-article")[0]
-        url = main.select("a")[0]
+        main = soup.select_first(".fig-main .fig-ensemble__first-article")
+        url = main.select_first("a")
 
         return MainArticle.create(
-            title=to_text(main, ".fig-ensemble__title"),
+            title=main.select_unique(".fig-ensemble__title").stripped_text,
             url=url["href"],
         )

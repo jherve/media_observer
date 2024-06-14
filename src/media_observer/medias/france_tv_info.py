@@ -2,23 +2,18 @@ from media_observer.article import (
     TopArticle,
     MainArticle,
     FrontPage,
-    to_text,
 )
 
 
 class FranceTvInfoFrontPage(FrontPage):
     @staticmethod
     def get_top_articles(soup):
-        def to_href(article, selector):
-            [url] = article.select(selector)
-            return url["href"]
-
         all_articles = soup.select("article.card-article-most-read")
 
         return [
             TopArticle.create(
-                title=to_text(a, "p.card-article-most-read__title"),
-                url=to_href(a, "a"),
+                title=a.select_unique("p.card-article-most-read__title").stripped_text,
+                url=a.select_unique("a")["href"],
                 rank=idx + 1,
             )
             for idx, a in enumerate(all_articles)
@@ -26,20 +21,18 @@ class FranceTvInfoFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        def select_first_of(soup, *selectors):
-            for s in selectors:
-                if found := soup.select(s):
-                    return found
-            return None
+        def get_kwargs(main_selector, title_selector):
+            main = soup.select_unique(main_selector)
+            title = main.select_unique(title_selector)
+            return dict(title=title.stripped_text, url=main.select_unique("a")["href"])
 
-        [main] = select_first_of(
-            soup, "article.card-article-majeure", "article.card-article-actu-forte"
-        )
-        [title] = select_first_of(
-            main, ".card-article-majeure__title", ".card-article-actu-forte__title"
-        )
+        try:
+            kwargs = get_kwargs(
+                "article.card-article-majeure", ".card-article-majeure__title"
+            )
+        except ValueError:
+            kwargs = get_kwargs(
+                "article.card-article-actu-forte", ".card-article-actu-forte__title"
+            )
 
-        return MainArticle.create(
-            title=title.text.strip(),
-            url=main.find("a")["href"],
-        )
+        return MainArticle.create(**kwargs)
