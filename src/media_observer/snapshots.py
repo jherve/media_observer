@@ -1,5 +1,6 @@
 import asyncio
 from uuid import uuid1
+import pickle
 import traceback
 import os
 import tempfile
@@ -171,6 +172,8 @@ class ParseWorker(Worker):
             )
             os.makedirs(sub_dir)
 
+            with open(sub_dir / "job.pickle", "wb") as f:
+                pickle.dump(job, f)
             with open(sub_dir / "snapshot.html", "w") as f:
                 f.write(snapshot.text)
             with open(sub_dir / "exception.txt", "w") as f:
