@@ -116,6 +116,7 @@ view_frontpages = View(
         "site_original_url",
         "timestamp",
         "timestamp_virtual",
+        "archive_snapshot_url",
     ],
     create_stmt="""
         SELECT
@@ -124,7 +125,8 @@ view_frontpages = View(
             si.name AS site_name,
             si.original_url AS site_original_url,
             fp.timestamp,
-            fp.timestamp_virtual
+            fp.timestamp_virtual,
+            fp.url_snapshot AS archive_snapshot_url
         FROM
             frontpages AS fp
         JOIN
@@ -182,6 +184,7 @@ view_articles_on_frontpage = View(
         "site_original_url",
         "timestamp",
         "timestamp_virtual",
+        "archive_snapshot_url",
         "article_id",
         "title",
         "title_id",
@@ -198,6 +201,7 @@ view_articles_on_frontpage = View(
             fpv.site_original_url,
             fpv."timestamp",
             fpv.timestamp_virtual,
+            fpv.archive_snapshot_url,
             av.id AS article_id,
             av.title,
             av.title_id,
@@ -353,7 +357,7 @@ class Storage(StorageAbc):
 
             return [
                 self._from_row(a, self._view_by_name["articles_on_frontpage_view"])
-                | {"time_diff": a[13]}
+                | {"time_diff": a[14]}
                 for a in main_articles
             ]
 

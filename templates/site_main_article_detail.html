@@ -59,7 +59,7 @@
     {%- endmacro -%}
 
     <a href="{{ url_for('index') }}">Homepage</a>
-    <h1>{{ ui.logo(focused["site_name"]) }}</h1>
+    <h1>{{ ui.logo(focused["site_name"]) }} <a href="{{ focused['archive_snapshot_url']}}"><img src="{{ url_for('static', path='/external-link.svg') }}" height="30px"></a></h1>
 
     <div id="article_browser">
         {{ articles_list_same_time(simultaneous_up, "up") }}
