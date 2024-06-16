@@ -1,4 +1,5 @@
 from abc import ABC
+from enum import Enum, auto
 from datetime import datetime
 from attrs import frozen
 
@@ -33,21 +34,31 @@ class Reference:
         return f"{self.table_name} ({self.column_name}) {on_delete}"
 
 
+class ColumnType(Enum):
+    PrimaryKey = "SERIAL PRIMARY KEY"
+    References = "REFERENCES"
+    Text = "TEXT"
+    Url = "TEXT"
+    TimestampTz = "timestamp with time zone"
+    Integer = "INTEGER"
+    Vector = "bytea"
+
+
 @frozen
 class Column:
     name: str
-    type_: str | None = None
+    type_: ColumnType | None = None
     primary_key: bool = False
     references: Reference | None = None
 
     @property
     def attrs(self):
         if self.primary_key:
-            return "SERIAL PRIMARY KEY"
+            return ColumnType.PrimaryKey.value
         elif self.references is not None:
-            return f"INTEGER REFERENCES {self.references.as_sql}"
+            return f"{ColumnType.Integer.value} {ColumnType.References.value} {self.references.as_sql}"
         elif self.type_ is not None:
-            return self.type_
+            return self.type_.value
         else:
             raise ValueError("Missing informations in column")
 
