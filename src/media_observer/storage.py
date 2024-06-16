@@ -119,16 +119,16 @@ view_frontpages = View(
     ],
     create_stmt="""
         SELECT
-            s.id,
+            fp.id,
             si.id AS site_id,
             si.name AS site_name,
             si.original_url AS site_original_url,
-            s.timestamp,
-            s.timestamp_virtual
+            fp.timestamp,
+            fp.timestamp_virtual
         FROM
-            frontpages AS s
+            frontpages AS fp
         JOIN
-            sites AS si ON si.id = s.site_id
+            sites AS si ON si.id = fp.site_id
         """,
 )
 view_articles = View(
