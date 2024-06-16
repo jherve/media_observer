@@ -88,11 +88,13 @@ class TopArticle(ABC):
 @frozen
 class MainArticle(ABC):
     article: ArticleSnapshot
+    is_live: bool | None
+    is_highlighted: bool | None
 
     @classmethod
-    def create(cls, title, url):
+    def create(cls, title, url, *, is_live=None, is_highlighted=None):
         article = ArticleSnapshot.create(title, url)
-        return cls(article)
+        return cls(article, is_live, is_highlighted)
 
 
 class MagnificentSoup(BeautifulSoup):
