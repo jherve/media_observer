@@ -42,6 +42,7 @@ class ColumnType(Enum):
     TimestampTz = "timestamp with time zone"
     Integer = "INTEGER"
     Vector = "bytea"
+    Boolean = "BOOLEAN"
 
 
 @frozen

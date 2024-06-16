@@ -64,6 +64,8 @@ table_main_articles = Table(
     columns=[
         Column(name="id", primary_key=True),
         Column(name="url", type_=ColumnType.Url),
+        Column(name="is_live", type_=ColumnType.Boolean),
+        Column(name="is_highlighted", type_=ColumnType.Boolean),
         Column(
             name="frontpage_id",
             references=Reference("frontpages", "id", on_delete="cascade"),
@@ -447,6 +449,8 @@ class Storage(StorageAbc):
                     article_id,
                     title_id,
                     page.main_article.article.url,
+                    page.main_article.is_live,
+                    page.main_article.is_highlighted,
                 )
 
                 for t in page.top_articles:
@@ -506,16 +510,33 @@ class Storage(StorageAbc):
         )
 
     async def _add_main_article(
-        self, conn, frontpage_id: int, article_id: int, title_id: int, url: URL
+        self,
+        conn,
+        frontpage_id: int,
+        article_id: int,
+        title_id: int,
+        url: URL,
+        is_live: bool | None,
+        is_highlighted: bool | None,
     ):
         await conn.execute_insert(
             self._insert_stmt(
-                "main_articles", ["frontpage_id", "article_id", "title_id", "url"]
+                "main_articles",
+                [
+                    "frontpage_id",
+                    "article_id",
+                    "title_id",
+                    "url",
+                    "is_live",
+                    "is_highlighted",
+                ],
             ),
             frontpage_id,
             article_id,
             title_id,
             str(url),
+            is_live,
+            is_highlighted,
         )
 
     async def _add_top_article(
