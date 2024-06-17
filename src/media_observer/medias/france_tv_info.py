@@ -22,12 +22,12 @@ class FranceTvInfoFrontPage(FrontPage):
     @classmethod
     def get_main_article(cls, soup):
         try:
-            return FranceTvInfoFrontPage._get_highlighted_article(soup)
+            return cls._get_highlighted_article(soup)
         except ValueError:
-            return FranceTvInfoFrontPage._get_non_highlighted_article(soup)
+            return cls._get_non_highlighted_article(soup)
 
-    @staticmethod
-    def _get_highlighted_article(soup):
+    @classmethod
+    def _get_highlighted_article(cls, soup):
         main = soup.select_unique("article.card-article-actu-forte")
         title = main.select_unique(".card-article-actu-forte__title")
 
@@ -37,8 +37,8 @@ class FranceTvInfoFrontPage(FrontPage):
             is_highlighted=True,
         )
 
-    @staticmethod
-    def _get_non_highlighted_article(soup):
+    @classmethod
+    def _get_non_highlighted_article(cls, soup):
         main = soup.select_unique("article.card-article-majeure")
         title = main.select_unique(".card-article-majeure__title")
 
