@@ -21,18 +21,29 @@ class FranceTvInfoFrontPage(FrontPage):
 
     @staticmethod
     def get_main_article(soup):
-        def get_kwargs(main_selector, title_selector):
-            main = soup.select_unique(main_selector)
-            title = main.select_unique(title_selector)
-            return dict(title=title.stripped_text, url=main.select_unique("a")["href"])
-
         try:
-            kwargs = get_kwargs(
-                "article.card-article-majeure", ".card-article-majeure__title"
-            )
+            return FranceTvInfoFrontPage._get_highlighted_article(soup)
         except ValueError:
-            kwargs = get_kwargs(
-                "article.card-article-actu-forte", ".card-article-actu-forte__title"
-            )
+            return FranceTvInfoFrontPage._get_non_highlighted_article(soup)
 
-        return MainArticle.create(**kwargs)
+    @staticmethod
+    def _get_highlighted_article(soup):
+        main = soup.select_unique("article.card-article-actu-forte")
+        title = main.select_unique(".card-article-actu-forte__title")
+
+        return MainArticle.create(
+            title=title.stripped_text,
+            url=main.select_unique("a")["href"],
+            is_highlighted=True,
+        )
+
+    @staticmethod
+    def _get_non_highlighted_article(soup):
+        main = soup.select_unique("article.card-article-majeure")
+        title = main.select_unique(".card-article-majeure__title")
+
+        return MainArticle.create(
+            title=title.stripped_text,
+            url=main.select_unique("a")["href"],
+            is_highlighted=False,
+        )
