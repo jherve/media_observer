@@ -138,13 +138,13 @@ class FrontPage(ABC):
     top_articles: list[TopArticle]
     main_article: MainArticle
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def get_top_articles(soup: MagnificentSoup) -> list[TopArticle]: ...
+    def get_top_articles(cls, soup: MagnificentSoup) -> list[TopArticle]: ...
 
-    @staticmethod
+    @classmethod
     @abstractmethod
-    def get_main_article(soup: MagnificentSoup) -> MainArticle: ...
+    def get_main_article(cls, soup: MagnificentSoup) -> MainArticle: ...
 
     @classmethod
     async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):

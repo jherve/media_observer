@@ -6,8 +6,8 @@ from media_observer.article import (
 
 
 class LeMondeFrontPage(FrontPage):
-    @staticmethod
-    def get_top_articles(soup):
+    @classmethod
+    def get_top_articles(cls, soup):
         all_articles = soup.select("div.top-article")
         return [
             TopArticle.create(
@@ -18,8 +18,8 @@ class LeMondeFrontPage(FrontPage):
             for idx, a in enumerate(all_articles)
         ]
 
-    @staticmethod
-    def get_main_article(soup):
+    @classmethod
+    def get_main_article(cls, soup):
         main = soup.select_unique("div.article--main")
         return MainArticle.create(
             title=main.select_unique("p.article__title-label").stripped_text,

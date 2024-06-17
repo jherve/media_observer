@@ -6,8 +6,8 @@ from media_observer.article import (
 
 
 class BfmTvFrontPage(FrontPage):
-    @staticmethod
-    def get_top_articles(soup):
+    @classmethod
+    def get_top_articles(cls, soup):
         all_articles = soup.select("section[id*='top_contenus'] li > a")
         return [
             TopArticle.create(
@@ -18,8 +18,8 @@ class BfmTvFrontPage(FrontPage):
             for idx, a in enumerate(all_articles)
         ]
 
-    @staticmethod
-    def get_main_article(soup):
+    @classmethod
+    def get_main_article(cls, soup):
         main = soup.select_unique("article.une_item")
         return MainArticle.create(
             title=main.select_unique("h2.title_une_item").stripped_text,

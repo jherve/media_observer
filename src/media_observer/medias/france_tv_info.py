@@ -6,8 +6,8 @@ from media_observer.article import (
 
 
 class FranceTvInfoFrontPage(FrontPage):
-    @staticmethod
-    def get_top_articles(soup):
+    @classmethod
+    def get_top_articles(cls, soup):
         all_articles = soup.select("article.card-article-most-read")
 
         return [
@@ -19,8 +19,8 @@ class FranceTvInfoFrontPage(FrontPage):
             for idx, a in enumerate(all_articles)
         ]
 
-    @staticmethod
-    def get_main_article(soup):
+    @classmethod
+    def get_main_article(cls, soup):
         try:
             return FranceTvInfoFrontPage._get_highlighted_article(soup)
         except ValueError:

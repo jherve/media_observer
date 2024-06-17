@@ -8,8 +8,8 @@ from media_observer.article import (
 
 
 class Tf1InfoFrontPage(FrontPage):
-    @staticmethod
-    def get_top_articles(soup: BeautifulSoup):
+    @classmethod
+    def get_top_articles(cls, soup: BeautifulSoup):
         all_articles = soup.select("#AllNews__List__0 .AllNewsItem .LinkArticle")
 
         return [
@@ -26,8 +26,8 @@ class Tf1InfoFrontPage(FrontPage):
             rank=idx + 1,
         )
 
-    @staticmethod
-    def get_main_article(soup):
+    @classmethod
+    def get_main_article(cls, soup):
         main = soup.select_first("#headlineid .ArticleCard__Title")
         url = main.select_unique("a")
 

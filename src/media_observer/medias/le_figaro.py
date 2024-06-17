@@ -7,14 +7,14 @@ from media_observer.article import (
 
 
 class LeFigaroFrontPage(FrontPage):
-    @staticmethod
-    def get_top_articles(soup: BeautifulSoup):
+    @classmethod
+    def get_top_articles(cls, soup: BeautifulSoup):
         # Le Figaro does not have such a view on its frontpage
 
         return []
 
-    @staticmethod
-    def get_main_article(soup):
+    @classmethod
+    def get_main_article(cls, soup):
         main = soup.select_first(".fig-main .fig-ensemble__first-article")
         url = main.select_first("a")
 
