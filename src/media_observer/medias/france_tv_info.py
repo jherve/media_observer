@@ -39,11 +39,11 @@ class FranceTvInfoFrontPage(FrontPage):
 
     @classmethod
     def _get_non_highlighted_article(cls, soup):
-        main = soup.select_unique("article.card-article-majeure")
+        main = soup.select_first("article.card-article-majeure a")
         title = main.select_unique(".card-article-majeure__title")
 
         return MainArticle.create(
             title=title.stripped_text,
-            url=main.select_unique("a")["href"],
+            url=main["href"],
             is_highlighted=False,
         )
