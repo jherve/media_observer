@@ -1,4 +1,3 @@
-import asyncio
 from abc import ABC, abstractmethod
 from attrs import frozen, field, validators
 import cattrs
@@ -148,8 +147,7 @@ class FrontPage(ABC):
 
     @classmethod
     async def from_snapshot(cls, snapshot: InternetArchiveSnapshot):
-        loop = asyncio.get_event_loop()
-        soup = await loop.run_in_executor(None, MagnificentSoup, snapshot.text, "lxml")
+        soup = MagnificentSoup(snapshot.text, "lxml")
 
         return cls(
             snapshot, soup, cls.get_top_articles(soup), cls.get_main_article(soup)
