@@ -301,8 +301,11 @@ class Storage(StorageAbc):
         return exists != []
 
     @classmethod
-    def _from_row(cls, r, table_or_view: Table | View):
-        columns = table_or_view.column_names
+    def _from_row(cls, r, table_or_view_or_strings: Table | View | list[str]):
+        if isinstance(table_or_view_or_strings, list):
+            columns = table_or_view_or_strings
+        else:
+            columns = table_or_view_or_strings.column_names
 
         return {col: r[idx] for idx, col in enumerate(columns)}
 
@@ -358,10 +361,8 @@ class Storage(StorageAbc):
                 timestamp,
             )
 
-            return [
-                self._from_row(a, view_articles_on_frontpage) | {"time_diff": a[14]}
-                for a in main_articles
-            ]
+            columns = view_articles_on_frontpage.column_names + ["time_diff"]
+            return [self._from_row(a, columns) for a in main_articles]
 
     async def list_all_titles_without_embedding(self):
         async with self.backend.get_connection() as conn:
