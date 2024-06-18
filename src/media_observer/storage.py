@@ -359,8 +359,7 @@ class Storage(StorageAbc):
             )
 
             return [
-                self._from_row(a, self._view_by_name["articles_on_frontpage_view"])
-                | {"time_diff": a[14]}
+                self._from_row(a, view_articles_on_frontpage) | {"time_diff": a[14]}
                 for a in main_articles
             ]
 
@@ -372,7 +371,7 @@ class Storage(StorageAbc):
                 WHERE NOT EXISTS (SELECT 1 FROM embeddings WHERE title_id = t.id)
             """)
 
-            return [self._from_row(r, self._table_by_name["titles"]) for r in rows]
+            return [self._from_row(r, table_titles) for r in rows]
 
     async def list_all_embeddings(self):
         async with self.backend.get_connection() as conn:
@@ -399,15 +398,11 @@ class Storage(StorageAbc):
                 *title_ids,
             )
 
-            return [
-                self._from_row(r, self._view_by_name["articles_on_frontpage_view"])
-                for r in rows
-            ]
+            return [self._from_row(r, view_articles_on_frontpage) for r in rows]
 
     @classmethod
     def _from_embeddings_row(cls, r):
-        [embeds_table] = [t for t in cls.tables if t.name == "embeddings"]
-        d = cls._from_row(r, embeds_table)
+        d = cls._from_row(r, table_embeddings)
         d.update(vector=np.frombuffer(d["vector"], dtype="float32"))
 
         return d
@@ -426,7 +421,7 @@ class Storage(StorageAbc):
     async def list_sites(self):
         async with self.backend.get_connection() as conn:
             sites = await conn.execute_fetchall("SELECT * FROM sites")
-            return [self._from_row(s, self._table_by_name["sites"]) for s in sites]
+            return [self._from_row(s, table_sites) for s in sites]
 
     async def add_page(
         self, collection: ArchiveCollection, page: FrontPage, dt: datetime
@@ -586,11 +581,3 @@ class Storage(StorageAbc):
     @staticmethod
     def _placeholders(*args):
         return ", ".join([f"${idx + 1}" for idx, _ in enumerate(args)])
-
-    @property
-    def _table_by_name(self):
-        return {t.name: t for t in self.tables}
-
-    @property
-    def _view_by_name(self):
-        return {v.name: v for v in self.views}
