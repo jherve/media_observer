@@ -1,6 +1,21 @@
 import asyncio
 from loguru import logger
 from attrs import frozen
+from abc import ABC, abstractmethod
+from uuid import UUID, uuid1
+
+
+@frozen
+class Job(ABC):
+    id_: UUID
+
+    @abstractmethod
+    async def execute(self, *args, **kwargs): ...
+
+
+class StupidJob(Job):
+    async def execute(self, *args, **kwargs):
+        logger.info(f"Executing job {self.id_}..")
 
 
 @frozen
@@ -27,12 +42,10 @@ class QueueWorker(Worker):
 
     async def run(self):
         logger.info(f"Task #{self.i} waiting for job..")
-        job = await self.queue.get()
-        await self.execute_job(job)
+        job: Job = await self.queue.get()
+        assert isinstance(job, Job)
+        await job.execute()
         self.queue.task_done()
-
-    async def execute_job(self, job):
-        logger.info(f"Executing job {job}..")
 
 
 queues = [asyncio.Queue() for _ in range(0, 2)]
@@ -48,8 +61,9 @@ async def main():
         for i in range(0, 2):
             qw = QueueWorker(i, queue=queues[i])
             tasks.append(tg.create_task(qw.loop()))
-        for idx, q in enumerate(queues):
-            await q.put({"test": idx})
+        for q in queues:
+            job = StupidJob(uuid1())
+            await q.put(job)
 
 
 if __name__ == "__main__":
