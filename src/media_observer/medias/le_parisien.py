@@ -27,6 +27,6 @@ class LeParisienFrontPage(FrontPage):
         url = main.select_first("a")
 
         return MainArticle.create(
-            title=url.stripped_text,
+            title=main.select_unique("h3").stripped_text,
             url=url["href"],
         )

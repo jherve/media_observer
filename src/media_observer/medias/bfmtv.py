@@ -20,8 +20,19 @@ class BfmTvFrontPage(FrontPage):
 
     @classmethod
     def get_main_article(cls, soup):
-        main = soup.select_unique("article.une_item")
-        return MainArticle.create(
-            title=main.select_unique("h2.title_une_item").stripped_text,
-            url=main.select_first("a")["href"],
-        )
+        highlighted = cls._get_kwargs(soup, ".megamax article.une_item")
+        if highlighted is not None:
+            return highlighted
+        else:
+            return cls._get_kwargs(soup, ".block_une article.une_item")
+
+    @classmethod
+    def _get_kwargs(cls, soup, main_selector: str):
+        try:
+            main = soup.select_unique(main_selector)
+            return MainArticle.create(
+                title=main.select_unique("h2").stripped_text,
+                url=main.select_first("a")["href"],
+            )
+        except ValueError:
+            return None
