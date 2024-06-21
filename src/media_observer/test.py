@@ -173,7 +173,6 @@ class WebServer(Worker):
             return
 
 
-queues = [asyncio.Queue() for _ in range(0, 2)]
 snap_queue = asyncio.Queue()
 
 
@@ -189,13 +188,6 @@ async def main():
             workers = {"snapshot": SnapshotWorker(snap_queue, storage, ia)}
             web_server = WebServer()
             async with asyncio.TaskGroup() as tg:
-                for i in range(0, 2):
-                    qw = QueueWorker(inbound_queue=queues[i])
-                    tasks.append(tg.create_task(qw.loop()))
-                for q in queues:
-                    job = StupidJob(uuid1())
-                    await q.put(job)
-
                 for w in workers.values():
                     tasks.append(tg.create_task(w.loop()))
                 for j in jobs[:3]:
