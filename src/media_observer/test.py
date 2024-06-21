@@ -173,9 +173,6 @@ async def main():
             worker = SnapshotWorker(15, snap_queue, storage, ia)
             async with asyncio.TaskGroup() as tg:
                 for i in range(0, 2):
-                    w = Worker(i)
-                    tasks.append(tg.create_task(w.loop()))
-                for i in range(0, 2):
                     qw = QueueWorker(i, queue=queues[i])
                     tasks.append(tg.create_task(qw.loop()))
                 for q in queues:
