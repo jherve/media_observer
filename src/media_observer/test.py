@@ -168,22 +168,25 @@ async def main():
         settings.snapshots.days_in_past, settings.snapshots.hours
     )
     storage = await Storage.create()
-    async with InternetArchiveClient.create() as ia:
-        worker = SnapshotWorker(15, snap_queue, storage, ia)
-        async with asyncio.TaskGroup() as tg:
-            for i in range(0, 2):
-                w = Worker(i)
-                tasks.append(tg.create_task(w.loop()))
-            for i in range(0, 2):
-                qw = QueueWorker(i, queue=queues[i])
-                tasks.append(tg.create_task(qw.loop()))
-            for q in queues:
-                job = StupidJob(uuid1())
-                await q.put(job)
+    try:
+        async with InternetArchiveClient.create() as ia:
+            worker = SnapshotWorker(15, snap_queue, storage, ia)
+            async with asyncio.TaskGroup() as tg:
+                for i in range(0, 2):
+                    w = Worker(i)
+                    tasks.append(tg.create_task(w.loop()))
+                for i in range(0, 2):
+                    qw = QueueWorker(i, queue=queues[i])
+                    tasks.append(tg.create_task(qw.loop()))
+                for q in queues:
+                    job = StupidJob(uuid1())
+                    await q.put(job)
 
-            tasks.append(tg.create_task(worker.loop()))
-            for j in jobs:
-                await snap_queue.put(j)
+                tasks.append(tg.create_task(worker.loop()))
+                for j in jobs[:3]:
+                    await snap_queue.put(j)
+    finally:
+        await storage.close()
 
 
 if __name__ == "__main__":
