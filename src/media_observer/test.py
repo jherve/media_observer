@@ -136,14 +136,14 @@ class Worker:
 
 @frozen
 class QueueWorker(Worker):
-    queue: asyncio.Queue
+    inbound_queue: asyncio.Queue
 
     async def run(self):
         logger.info(f"Task #{id(self)} waiting for job..")
-        job: Job = await self.queue.get()
+        job: Job = await self.inbound_queue.get()
         assert isinstance(job, Job)
         await job.execute(**self.get_execution_context())
-        self.queue.task_done()
+        self.inbound_queue.task_done()
 
     def get_execution_context(self):
         return {}
@@ -190,7 +190,7 @@ async def main():
             web_server = WebServer()
             async with asyncio.TaskGroup() as tg:
                 for i in range(0, 2):
-                    qw = QueueWorker(queue=queues[i])
+                    qw = QueueWorker(inbound_queue=queues[i])
                     tasks.append(tg.create_task(qw.loop()))
                 for q in queues:
                     job = StupidJob(uuid1())
