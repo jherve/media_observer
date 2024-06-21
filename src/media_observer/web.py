@@ -71,7 +71,9 @@ async def get_db():
     if storage is None:
         storage = await Storage.create()
 
-    return storage
+    yield storage
+
+    await storage.close()
 
 
 async def get_similarity_search(storage: Storage = Depends(get_db)):
