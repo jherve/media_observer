@@ -1,6 +1,7 @@
 import asyncio
 from datetime import date, datetime, time, timedelta
 import traceback
+from typing import ClassVar
 from zoneinfo import ZoneInfo
 from loguru import logger
 from attrs import frozen
@@ -23,6 +24,7 @@ from config import settings
 @frozen
 class Job(ABC):
     id_: UUID
+    queue: ClassVar[asyncio.Queue]
 
     @abstractmethod
     async def execute(self, **kwargs): ...
@@ -42,6 +44,7 @@ def unique_id():
 
 @frozen
 class SnapshotSearchJob(Job):
+    queue = asyncio.Queue()
     collection: ArchiveCollection
     dt: datetime
 
@@ -173,9 +176,6 @@ class WebServer(Worker):
             return
 
 
-snap_queue = asyncio.Queue()
-
-
 async def main():
     logger.info("Hello world")
     tasks = []
@@ -185,13 +185,13 @@ async def main():
     storage = await Storage.create()
     try:
         async with InternetArchiveClient.create() as ia:
-            workers = {"snapshot": SnapshotWorker(snap_queue, storage, ia)}
+            workers = {"snapshot": SnapshotWorker(SnapshotSearchJob.queue, storage, ia)}
             web_server = WebServer()
             async with asyncio.TaskGroup() as tg:
                 for w in workers.values():
                     tasks.append(tg.create_task(w.loop()))
                 for j in jobs[:3]:
-                    await snap_queue.put(j)
+                    await SnapshotSearchJob.queue.put(j)
 
                 # THIS TASK DOES NOT HANDLE CANCELLATION SIGNAL
                 tasks.append(tg.create_task(web_server.run()))
