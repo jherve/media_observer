@@ -6,6 +6,8 @@ from loguru import logger
 from attrs import frozen
 from abc import ABC, abstractmethod
 from uuid import UUID, uuid1
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
 
 from media_observer.article import ArchiveCollection
 from media_observer.internet_archive import (
@@ -14,6 +16,7 @@ from media_observer.internet_archive import (
 )
 from media_observer.storage import Storage
 from media_observer.medias import media_collection
+from media_observer.web import app
 from config import settings
 
 
@@ -157,6 +160,24 @@ class SnapshotWorker(QueueWorker):
         return {"storage": self.storage, "ia_client": self.ia_client}
 
 
+@frozen
+class WebServer(Worker):
+    # app: Any
+    # config: Any
+
+    async def run(self):
+        shutdown_event = asyncio.Event()
+
+        try:
+            logger.info("Web server stuff")
+            # Just setting the shutdown_trigger even though it is not connected
+            # to anything allows the app to gracefully shutdown
+            await serve(app, Config(), shutdown_trigger=shutdown_event.wait)
+        except asyncio.CancelledError:
+            logger.warning("Web server exiting")
+            return
+
+
 queues = [asyncio.Queue() for _ in range(0, 2)]
 snap_queue = asyncio.Queue()
 
@@ -171,6 +192,7 @@ async def main():
     try:
         async with InternetArchiveClient.create() as ia:
             worker = SnapshotWorker(15, snap_queue, storage, ia)
+            web_server = WebServer(16)
             async with asyncio.TaskGroup() as tg:
                 for i in range(0, 2):
                     qw = QueueWorker(i, queue=queues[i])
@@ -182,6 +204,9 @@ async def main():
                 tasks.append(tg.create_task(worker.loop()))
                 for j in jobs[:3]:
                     await snap_queue.put(j)
+
+                # THIS TASK DOES NOT HANDLE CANCELLATION SIGNAL
+                tasks.append(tg.create_task(web_server.run()))
     finally:
         await storage.close()
 
