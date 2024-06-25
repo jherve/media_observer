@@ -319,26 +319,27 @@ class EmbeddingsWorker(Worker):
 
             return {sentences[idx][0]: e for idx, e in enumerate(all_embeddings)}
 
-        loop = asyncio.get_running_loop()
-        if self.model is None:
-            await loop.run_in_executor(None, load_model)
+        while True:
+            loop = asyncio.get_running_loop()
+            if self.model is None:
+                await loop.run_in_executor(None, load_model)
 
-        all_titles = [
-            (t["id"], t["text"])
-            for t in await self.storage.list_all_titles_without_embedding()
-        ]
+            all_titles = [
+                (t["id"], t["text"])
+                for t in await self.storage.list_all_titles_without_embedding()
+            ]
 
-        for batch in batched(all_titles, self.batch_size):
-            embeddings = compute_embeddings_for(batch)
-            for i, embed in embeddings.items():
-                await self.storage.add_embedding(i, embed)
+            for batch in batched(all_titles, self.batch_size):
+                embeddings = compute_embeddings_for(batch)
+                for i, embed in embeddings.items():
+                    await self.storage.add_embedding(i, embed)
 
-            logger.debug(f"Stored {len(embeddings)} embeddings")
+                logger.debug(f"Stored {len(embeddings)} embeddings")
 
-            if embeddings:
-                self.new_embeddings_event.set()
+                if embeddings:
+                    self.new_embeddings_event.set()
 
-        await asyncio.sleep(5)
+            await asyncio.sleep(5)
 
 
 @frozen
