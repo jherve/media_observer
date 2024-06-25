@@ -10,7 +10,7 @@ from typing import Any, ClassVar
 import urllib.parse
 from zoneinfo import ZoneInfo
 from loguru import logger
-from attrs import field, frozen
+from attrs import define, field, frozen
 from abc import ABC, abstractmethod
 from uuid import UUID, uuid1
 from hypercorn.asyncio import serve
@@ -209,7 +209,6 @@ class SnapshotStoreJob(Job):
             raise e
 
 
-@frozen
 class Worker(ABC):
     @abstractmethod
     async def run(self): ...
@@ -298,7 +297,7 @@ def batched(iterable, n):
         yield batch
 
 
-@frozen
+@define
 class EmbeddingsWorker(Worker):
     storage: Storage
     model_name: str
@@ -310,10 +309,7 @@ class EmbeddingsWorker(Worker):
         def load_model():
             from sentence_transformers import SentenceTransformer
 
-            # Quite a dirty trick since the instance is supposed to be "frozen"
-            # but I did not find a better solution to load the model in the
-            # background
-            object.__setattr__(self, "model", SentenceTransformer(self.model_name))
+            self.model = SentenceTransformer(self.model_name)
 
         def compute_embeddings_for(sentences: tuple[tuple[int, str]]):
             logger.debug(f"Computing embeddings for {len(sentences)} sentences")
