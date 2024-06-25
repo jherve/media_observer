@@ -298,6 +298,9 @@ def batched(iterable, n):
         yield batch
 
 
+new_embeddings_event = asyncio.Event()
+
+
 @frozen
 class EmbeddingsWorker(Worker):
     storage: Storage
@@ -337,6 +340,9 @@ class EmbeddingsWorker(Worker):
 
             logger.debug(f"Stored {len(embeddings)} embeddings")
 
+            if embeddings:
+                new_embeddings_event.set()
+
         await asyncio.sleep(5)
 
 
@@ -345,12 +351,15 @@ class SimilarityIndexWorker(Worker):
     storage: Storage
 
     async def run(self):
-        sim_index = SimilaritySearch.create(self.storage)
+        await new_embeddings_event.wait()
 
+        sim_index = SimilaritySearch.create(self.storage)
         logger.info("Starting index..")
         await sim_index.add_embeddings()
         await sim_index.save()
         logger.info("Similarity index ready")
+
+        new_embeddings_event.clear()
 
 
 @frozen
@@ -374,6 +383,7 @@ async def main():
         settings.snapshots.days_in_past, settings.snapshots.hours
     )
     storage = await Storage.create()
+    new_embeddings_event.set()
     try:
         async with InternetArchiveClient.create() as ia:
             workers = {
@@ -401,7 +411,7 @@ async def main():
 
                 tasks.append(tg.create_task(web_server.run()))
                 tasks.append(tg.create_task(embeds.loop()))
-                tasks.append(tg.create_task(index.run()))
+                tasks.append(tg.create_task(index.loop()))
     finally:
         await storage.close()
 
