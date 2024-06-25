@@ -242,14 +242,13 @@ class QueueWorker(Worker):
         assert isinstance(job, Job)
 
         ret, further_jobs = await job.execute(**self.get_execution_context())
-        try:
+        if self.outbound_queue is not None:
             for j in further_jobs:
                 await self.outbound_queue.put(j)
-        except AttributeError as e:
+        elif further_jobs:
             logger.error(
-                f"Could not push jobs {further_jobs} because there is no outbound queue"
+                f"Could not push {len(further_jobs)} jobs because there is no outbound queue"
             )
-            raise (e)
         self.inbound_queue.task_done()
 
     def get_execution_context(self):
