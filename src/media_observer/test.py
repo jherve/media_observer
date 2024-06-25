@@ -375,7 +375,7 @@ class WebServer(Worker):
 
 @frozen
 class MediaObserverApplication:
-    workers: dict[str, Worker]
+    workers: list[Worker]
     web_server: WebServer
     embeds: EmbeddingsWorker
     index: SimilarityIndexWorker
@@ -385,14 +385,19 @@ class MediaObserverApplication:
         new_embeddings_event = asyncio.Event()
         new_embeddings_event.set()
 
-        workers = {
-            "snapshot": SnapshotWorker(
-                SnapshotSearchJob.queue, SnapshotFetchJob.queue, storage, ia
-            ),
-            "fetch": FetchWorker(SnapshotFetchJob.queue, SnapshotParseJob.queue, ia),
-            "parse": ParseWorker(SnapshotParseJob.queue, SnapshotStoreJob.queue),
-            "store": StoreWorker(SnapshotStoreJob.queue, None, storage),
-        }
+        workers = (
+            [
+                SnapshotWorker(
+                    SnapshotSearchJob.queue, SnapshotFetchJob.queue, storage, ia
+                )
+            ]
+            * 3
+            + [FetchWorker(SnapshotFetchJob.queue, SnapshotParseJob.queue, ia)] * 3
+            + [
+                ParseWorker(SnapshotParseJob.queue, SnapshotStoreJob.queue),
+                StoreWorker(SnapshotStoreJob.queue, None, storage),
+            ]
+        )
         web_server = WebServer()
         embeds = EmbeddingsWorker(
             storage,
@@ -416,7 +421,7 @@ async def main():
             app = await MediaObserverApplication.create(storage, ia)
 
             async with asyncio.TaskGroup() as tg:
-                for w in list(app.workers.values()) + [
+                for w in app.workers + [
                     app.embeds,
                     app.index,
                     app.web_server,
