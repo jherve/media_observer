@@ -70,12 +70,9 @@ class SimilaritySearch:
 
     @classmethod
     def create(cls, storage):
-        if cls.instance is None:
-            d = 1024
-            index = AnnoyIndex(d, "dot")
-            cls.instance = SimilaritySearch(storage, index)
-
-        return cls.instance
+        d = 1024
+        index = AnnoyIndex(d, "dot")
+        return SimilaritySearch(storage, index)
 
     async def save(self):
         self.index.save(file_path_index)
