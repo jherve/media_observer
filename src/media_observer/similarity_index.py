@@ -1,4 +1,6 @@
 import asyncio
+import os
+from datetime import datetime
 import pickle
 from attrs import define
 from typing import Any, Callable, ClassVar
@@ -17,6 +19,7 @@ file_path_pickle_class = "./similarity.class"
 class SimilaritySearch:
     storage: Storage
     index: AnnoyIndex
+    build_dt: datetime | None = None
     index_id_to_title: dict[int, int] = {}
     title_to_index_id: dict[int, int] = {}
     instance: ClassVar[Any | None] = None
@@ -37,6 +40,7 @@ class SimilaritySearch:
             self.index_id_to_title[idx] = e["title_id"]
 
         self.index.build(20)
+        self.build_dt = datetime.now()
 
     async def search(
         self,
@@ -80,23 +84,36 @@ class SimilaritySearch:
             pickle.dump((self.index_id_to_title, self.title_to_index_id), f)
 
     @classmethod
+    def _latest_index_file_modification_dt(cls) -> datetime:
+        statinfo = os.stat(file_path_index)
+        return datetime.fromtimestamp(statinfo.st_mtime)
+
+    @property
+    def stale(self) -> bool:
+        return (
+            self.build_dt is not None
+            and self._latest_index_file_modification_dt() > self.build_dt
+        )
+
+    @classmethod
     def load(cls, storage):
-        if cls.instance is None:
-            d = 1024
-            index = AnnoyIndex(d, "dot")
-            try:
-                index.load(file_path_index)
-                with open(file_path_pickle_class, "rb") as f:
-                    (index_to_title, title_to_index) = pickle.load(f)
+        d = 1024
+        index = AnnoyIndex(d, "dot")
+        try:
+            index.load(file_path_index)
+            with open(file_path_pickle_class, "rb") as f:
+                (index_to_title, title_to_index) = pickle.load(f)
 
-                cls.instance = SimilaritySearch(
-                    storage, index, index_to_title, title_to_index
-                )
-            except OSError:
-                logger.warning("Could not find index data")
-                cls.instance = SimilaritySearch(storage, index)
-
-        return cls.instance
+            return SimilaritySearch(
+                storage,
+                index,
+                cls._latest_index_file_modification_dt(),
+                index_to_title,
+                title_to_index,
+            )
+        except OSError:
+            logger.warning("Could not find index data")
+            return SimilaritySearch(storage, index)
 
 
 async def main():

@@ -74,8 +74,17 @@ async def get_db():
     return storage
 
 
+sim_index: SimilaritySearch | None = None
+
+
 async def get_similarity_search(storage: Storage = Depends(get_db)):
-    return SimilaritySearch.load(storage)
+    global sim_index
+
+    if sim_index is None or sim_index.stale:
+        sim_index = SimilaritySearch.load(storage)
+        return sim_index
+    else:
+        return sim_index
 
 
 @app.get("/", response_class=HTMLResponse)
