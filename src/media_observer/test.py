@@ -384,15 +384,16 @@ class SimilarityIndexWorker(Worker):
     new_embeddings_event: asyncio.Event
 
     async def run(self):
-        await self.new_embeddings_event.wait()
+        while True:
+            await self.new_embeddings_event.wait()
 
-        sim_index = SimilaritySearch.create(self.storage)
-        logger.info("Starting index..")
-        await sim_index.add_embeddings()
-        await sim_index.save()
-        logger.info("Similarity index ready")
+            sim_index = SimilaritySearch.create(self.storage)
+            logger.info("Starting index..")
+            await sim_index.add_embeddings()
+            await sim_index.save()
+            logger.info("Similarity index ready")
 
-        self.new_embeddings_event.clear()
+            self.new_embeddings_event.clear()
 
 
 @frozen
