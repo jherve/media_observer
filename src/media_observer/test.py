@@ -231,8 +231,7 @@ class QueueWorker(Worker):
                 self._log("WARNING", "cancelled")
                 return
             except Exception as e:
-                traceback.print_exception(e)
-                self._log("ERROR", f"failed with {e}")
+                self._log("DEBUG", f"failed with {e.__class__.__name__}")
 
     async def step(self):
         job: Job = await self.inbound_queue.get()
