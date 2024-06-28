@@ -1,18 +1,16 @@
 import asyncio
-import sys
-from uuid import uuid1
-import pickle
-import traceback
-import os
-import tempfile
-import urllib.parse
-from pathlib import Path
 from datetime import date, datetime, time, timedelta
+import os
+from pathlib import Path
+import pickle
+import tempfile
+import traceback
+import urllib.parse
 from zoneinfo import ZoneInfo
 from attrs import frozen
-from loguru import logger
+from uuid import uuid1
 
-
+from media_observer.worker import Job, Worker, QueueWorker
 from media_observer.article import ArchiveCollection, FrontPage
 from media_observer.internet_archive import (
     InternetArchiveClient,
@@ -20,14 +18,12 @@ from media_observer.internet_archive import (
     InternetArchiveSnapshotId,
     SnapshotNotYetAvailable,
 )
-from media_observer.medias import media_collection
 from media_observer.storage import Storage
-from media_observer.worker import Job, Worker, JobQueue
+from media_observer.medias import media_collection
 from config import settings
 
 
 tmpdir = Path(tempfile.mkdtemp(prefix="media_observer"))
-idx = 0
 
 
 def unique_id():
@@ -36,6 +32,7 @@ def unique_id():
 
 @frozen
 class SnapshotSearchJob(Job):
+    queue = asyncio.Queue()
     collection: ArchiveCollection
     dt: datetime
 
@@ -63,68 +60,40 @@ class SnapshotSearchJob(Job):
             < now
         ]
 
+    async def execute(self, *, storage: Storage, ia_client: InternetArchiveClient):
+        collection = self.collection
+        dt = self.dt
 
-@frozen
-class SnapshotFetchJob(Job):
-    snap_id: InternetArchiveSnapshotId
-    collection: ArchiveCollection
-    dt: datetime
-
-
-@frozen
-class SnapshotParseJob(Job):
-    collection: ArchiveCollection
-    snapshot: InternetArchiveSnapshot
-    dt: datetime
-
-
-@frozen
-class SnapshotStoreJob(Job):
-    page: FrontPage
-    collection: ArchiveCollection
-    dt: datetime
-
-
-@frozen
-class SearchWorker(Worker):
-    storage: Storage
-    ia_client: InternetArchiveClient
-    type_ = SnapshotSearchJob
-
-    async def execute(self, job: SnapshotSearchJob):
-        collection = job.collection
-        dt = job.dt
-
-        if await self.storage.exists_frontpage(collection.name, dt):
+        if await storage.exists_frontpage(collection.name, dt):
             return None, []
 
         self._log(
-            "DEBUG", job, f"Start handling snap for collection {collection.name} @ {dt}"
+            "DEBUG",
+            f"Start handling snap for collection {collection.name} @ {dt}",
         )
 
         try:
-            id_closest = await self.ia_client.get_snapshot_id_closest_to(
-                job.collection.url, job.dt
+            id_closest = await ia_client.get_snapshot_id_closest_to(
+                self.collection.url, self.dt
             )
 
-            delta = job.dt - id_closest.timestamp
+            delta = self.dt - id_closest.timestamp
             abs_delta = abs(delta)
             if abs_delta.total_seconds() > 3600:
                 time = "after" if delta > timedelta(0) else "before"
                 self._log(
                     "WARNING",
-                    job,
-                    f"Snapshot is {abs(delta)} {time} the required timestamp ({id_closest.timestamp} instead of {job.dt})",
+                    f"Snapshot is {abs(delta)} {time} the required timestamp ({id_closest.timestamp} instead of {self.dt})",
                 )
 
+            self._log("INFO", f"Got snapshot {id_closest}")
             return id_closest, [
-                SnapshotFetchJob(job.id_, id_closest, job.collection, job.dt)
+                SnapshotFetchJob(self.id_, id_closest, self.collection, self.dt)
             ]
 
         except SnapshotNotYetAvailable as e:
             self._log(
                 "WARNING",
-                job,
                 f"Snapshot for {collection.name} @ {dt} not yet available",
             )
             raise e
@@ -132,7 +101,6 @@ class SearchWorker(Worker):
         except Exception as e:
             self._log(
                 "ERROR",
-                job,
                 f"Error while trying to find snapshot for {collection.name} @ {dt}",
             )
             traceback.print_exception(e)
@@ -140,32 +108,41 @@ class SearchWorker(Worker):
 
 
 @frozen
-class FetchWorker(Worker):
-    ia_client: InternetArchiveClient
-    type_ = SnapshotFetchJob
+class SnapshotFetchJob(Job):
+    queue = asyncio.Queue()
+    snap_id: InternetArchiveSnapshotId
+    collection: ArchiveCollection
+    dt: datetime
 
-    async def execute(self, job: SnapshotFetchJob):
+    async def execute(self, ia_client: InternetArchiveClient):
         try:
-            closest = await self.ia_client.fetch(job.snap_id)
-            return closest, [SnapshotParseJob(job.id_, job.collection, closest, job.dt)]
+            closest = await ia_client.fetch(self.snap_id)
+            return closest, [
+                SnapshotParseJob(self.id_, self.collection, closest, self.dt)
+            ]
         except Exception as e:
-            self._log("ERROR", job, f"Error while fetching {job.snap_id}")
+            self._log("ERROR", f"Error while fetching {self.snap_id}")
             traceback.print_exception(e)
             raise e
 
 
 @frozen
-class ParseWorker(Worker):
-    type_ = SnapshotParseJob
+class SnapshotParseJob(Job):
+    queue = asyncio.Queue()
+    collection: ArchiveCollection
+    snapshot: InternetArchiveSnapshot
+    dt: datetime
 
-    async def execute(self, job: SnapshotParseJob):
+    async def execute(self):
         try:
-            main_page = await job.collection.FrontPageClass.from_snapshot(job.snapshot)
+            main_page = await self.collection.FrontPageClass.from_snapshot(
+                self.snapshot
+            )
             return main_page, [
-                SnapshotStoreJob(job.id_, main_page, job.collection, job.dt)
+                SnapshotStoreJob(self.id_, main_page, self.collection, self.dt)
             ]
         except Exception as e:
-            snapshot = job.snapshot
+            snapshot = self.snapshot
             sub_dir = (
                 tmpdir
                 / urllib.parse.quote_plus(snapshot.id.original)
@@ -173,8 +150,8 @@ class ParseWorker(Worker):
             )
             os.makedirs(sub_dir)
 
-            with open(sub_dir / "job.pickle", "wb") as f:
-                pickle.dump(job, f)
+            with open(sub_dir / "self.pickle", "wb") as f:
+                pickle.dump(self, f)
             with open(sub_dir / "snapshot.html", "w") as f:
                 f.write(snapshot.text)
             with open(sub_dir / "exception.txt", "w") as f:
@@ -184,86 +161,88 @@ class ParseWorker(Worker):
 
             self._log(
                 "ERROR",
-                job,
                 f"Error while parsing snapshot from {snapshot.id.url}, details were written in directory {sub_dir}",
             )
             raise e
 
 
 @frozen
-class StoreWorker(Worker):
-    storage: Storage
-    type_ = SnapshotStoreJob
+class SnapshotStoreJob(Job):
+    queue = asyncio.Queue()
+    page: FrontPage
+    collection: ArchiveCollection
+    dt: datetime
 
-    async def execute(self, job: SnapshotStoreJob):
+    async def execute(self, storage: Storage):
         try:
-            return await self.storage.add_page(job.collection, job.page, job.dt), []
+            return await storage.add_page(self.collection, self.page, self.dt), []
         except Exception as e:
             self._log(
                 "ERROR",
-                job,
-                f"Error while attempting to store {job.page} from {job.collection.name} @ {job.dt}",
+                f"Error while attempting to store {self.page} from {self.collection.name} @ {self.dt}",
             )
             traceback.print_exception(e)
             raise e
 
 
-async def main(jobs):
-    storage = await Storage.create()
+@frozen
+class SnapshotWatchdog(Worker):
+    snapshot_queue: asyncio.Queue
 
-    queue = JobQueue(
-        [
-            SnapshotSearchJob,
-            SnapshotFetchJob,
-            SnapshotParseJob,
-            SnapshotStoreJob,
-        ]
-    )
+    async def run(self):
+        await self._push_new_jobs()
 
-    logger.info("Starting snapshot service..")
+        while True:
+            sleep_time_s = self._seconds_until_next_full_hour()
+            await asyncio.sleep(sleep_time_s)
+            self._log("INFO", f"Woke up at {datetime.now()}")
+            await self._push_new_jobs()
 
-    for j in jobs:
-        queue.put_nowait(j)
-
-    async with InternetArchiveClient.create() as ia:
-        workers = {
-            SearchWorker(queue, storage, ia): 3,
-            FetchWorker(queue, ia): 3,
-            ParseWorker(queue): 3,
-            StoreWorker(queue, storage): 1,
-        }
-
-        async with asyncio.TaskGroup() as tg:
-            tasks = []
-            for w, nb in workers.items():
-                for _ in range(nb):
-                    tasks.append(tg.create_task(w.loop()))
-
-            # Wait until the queue is fully processed.
-            await queue.join()
-
-            for t in tasks:
-                t.cancel()
-
-    await storage.close()
-    logger.info("Snapshot service exiting")
-
-
-async def replay(root_dir: Path):
-    jobs = []
-    for pickled_job in root_dir.glob("**/**/*.pickle"):
-        with open(pickled_job, "rb") as f:
-            jobs.append(pickle.load(f))
-
-    await main(jobs)
-
-
-if __name__ == "__main__":
-    try:
-        path = Path(sys.argv[1])
-        asyncio.run(replay(path))
-    except IndexError:
-        jobs = SnapshotSearchJob.create(
+    async def _push_new_jobs(self):
+        initial_jobs = SnapshotSearchJob.create(
             settings.snapshots.days_in_past, settings.snapshots.hours
         )
-        asyncio.run(main(jobs))
+        for j in initial_jobs:
+            await self.snapshot_queue.put(j)
+
+    @staticmethod
+    def _seconds_until_next_full_hour() -> float:
+        now = datetime.now()
+        next_tick = timedelta(
+            hours=1,
+            minutes=-now.minute,
+            seconds=-now.second,
+            microseconds=-now.microsecond,
+        )
+        return next_tick / timedelta(microseconds=1) / 1e6
+
+
+@frozen
+class SnapshotWorker(QueueWorker):
+    storage: Storage
+    ia_client: InternetArchiveClient
+
+    def get_execution_context(self):
+        return {"storage": self.storage, "ia_client": self.ia_client}
+
+
+@frozen
+class FetchWorker(QueueWorker):
+    ia_client: InternetArchiveClient
+
+    def get_execution_context(self):
+        return {"ia_client": self.ia_client}
+
+
+@frozen
+class ParseWorker(QueueWorker):
+    def get_execution_context(self):
+        return {}
+
+
+@frozen
+class StoreWorker(QueueWorker):
+    storage: Storage
+
+    def get_execution_context(self):
+        return {"storage": self.storage}
