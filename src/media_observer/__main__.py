@@ -18,27 +18,9 @@ from media_observer.snapshots import (
     StoreWorker,
     SnapshotSearchJob,
 )
-from media_observer.similarity_index import SimilaritySearch
+from media_observer.similarity_index import SimilarityIndexWorker
 from media_observer.storage import Storage
 from media_observer.web import app
-
-
-@frozen
-class SimilarityIndexWorker(Worker):
-    storage: Storage
-    new_embeddings_event: asyncio.Event
-
-    async def run(self):
-        while True:
-            await self.new_embeddings_event.wait()
-
-            sim_index = SimilaritySearch.create(self.storage)
-            logger.info("Starting index..")
-            await sim_index.add_embeddings()
-            await sim_index.save()
-            logger.info("Similarity index ready")
-
-            self.new_embeddings_event.clear()
 
 
 @frozen
