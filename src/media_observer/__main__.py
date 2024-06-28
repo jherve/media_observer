@@ -46,11 +46,6 @@ class Job(ABC):
         logger.log(level, f"[{self.id_}] {msg}")
 
 
-class StupidJob(Job):
-    async def execute(self, *args, **kwargs):
-        logger.info(f"Executing job {self.id_}..")
-
-
 def unique_id():
     return uuid1()
 
@@ -449,7 +444,6 @@ class MediaObserverApplication:
             new_embeddings_event,
         )
         index = SimilarityIndexWorker(storage, new_embeddings_event)
-        watchdog = SnapshotWatchdog(SnapshotSearchJob.queue)
         return MediaObserverApplication(snapshots_workers, web_server, embeds, index)
 
 
