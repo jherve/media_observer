@@ -1,8 +1,6 @@
 import asyncio
 from loguru import logger
 from attrs import frozen
-from hypercorn.asyncio import serve
-from hypercorn.config import Config
 
 from media_observer.worker import Worker
 from media_observer.embeddings import EmbeddingsWorker
@@ -20,22 +18,7 @@ from media_observer.snapshots import (
 )
 from media_observer.similarity_index import SimilarityIndexWorker
 from media_observer.storage import Storage
-from media_observer.web import app
-
-
-@frozen
-class WebServer(Worker):
-    async def run(self):
-        shutdown_event = asyncio.Event()
-
-        try:
-            logger.info("Web server stuff")
-            # Just setting the shutdown_trigger even though it is not connected
-            # to anything allows the app to gracefully shutdown
-            await serve(app, Config(), shutdown_trigger=shutdown_event.wait)
-        except asyncio.CancelledError:
-            logger.warning("Web server exiting")
-            return
+from media_observer.web import WebServer
 
 
 @frozen

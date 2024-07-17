@@ -1,4 +1,6 @@
+import asyncio
 from datetime import datetime, timedelta
+from attrs import frozen
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -8,9 +10,14 @@ from babel import Locale
 import humanize
 from zoneinfo import ZoneInfo
 
+from hypercorn.asyncio import serve
+from hypercorn.config import Config
+from loguru import logger
+
 from media_observer.medias import media_collection
 from media_observer.storage import Storage
 from media_observer.similarity_index import SimilaritySearch
+from media_observer.worker import Worker
 
 
 def add_date_processing(_any):
@@ -178,3 +185,18 @@ async def site_main_article_frontpage(
             ),
         },
     )
+
+
+@frozen
+class WebServer(Worker):
+    async def run(self):
+        shutdown_event = asyncio.Event()
+
+        try:
+            logger.info("Web server stuff")
+            # Just setting the shutdown_trigger even though it is not connected
+            # to anything allows the app to gracefully shutdown
+            await serve(app, Config(), shutdown_trigger=shutdown_event.wait)
+        except asyncio.CancelledError:
+            logger.warning("Web server exiting")
+            return
